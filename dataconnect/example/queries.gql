@@ -1,0 +1,33 @@
+mutation CreateNewUser($username: String!, $email: String!) @auth(level: USER) {
+  user_insert(data: {username: $username, email: $email, createdAt_expr: "request.time"})
+}
+
+query GetMatchesByTeam($teamId: UUID!) @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  matches(where: {_or: [{homeTeamId: {eq: $teamId}}, {awayTeamId: {eq: $teamId}}]}) {
+    id
+    homeTeam {
+      name
+    }
+    awayTeam {
+      name
+    }
+    homeTeamScore
+    awayTeamScore
+    matchDate
+  }
+}
+
+mutation UpdateMatchScore($matchId: UUID!, $homeTeamScore: Int!, $awayTeamScore: Int!) @auth(level: USER) {
+  match_update(key: {id: $matchId}, data: {homeTeamScore: $homeTeamScore, awayTeamScore: $awayTeamScore})
+}
+
+query GetCommentsForMatch($matchId: UUID!) @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  comments(where: {matchId: {eq: $matchId}}) {
+    id
+    text
+    user {
+      username
+    }
+    createdAt
+  }
+}

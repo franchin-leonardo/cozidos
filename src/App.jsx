@@ -16,21 +16,22 @@ import {
 
 
 
-// --- Variáveis de Configuração (Injetadas pelo Ambiente) ---
-// Revertendo para a configuração que funciona neste ambiente
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
-const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-let firebaseConfig = {};
-try {
-    firebaseConfig = JSON.parse(firebaseConfigStr);
-    if (Object.keys(firebaseConfig).length === 0) {
-        console.warn("Configuração do Firebase está vazia. O app pode não funcionar offline.");
-    }
-} catch (e) {
-    console.error("Erro ao parsear a configuração do Firebase:", e);
-}
+// --- Configuração do Firebase (Lida do Netlify) ---
+// Você DEVE configurar estas variáveis no painel do Netlify
+const firebaseConfig = {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID
+  };
+  
+  // Validação simples para garantir que as variáveis foram carregadas
+  if (!firebaseConfig.apiKey) {
+      console.error("Erro: Variáveis de ambiente do Firebase (VITE_FIREBASE_...) não foram carregadas.");
+      // Você pode querer mostrar um erro na UI aqui
+  } 
 
 
 // Inicialização do Firebase
@@ -122,19 +123,19 @@ export default function App() {
     const playersCollectionRef = useMemo(() => {
         if (!userId) return null;
         // Revertendo para o caminho da coleção que usa o appId
-        const collectionPath = `artifacts/${appId}/users/${userId}/players`;
+        const collectionPath = `artifacts/${firebaseConfig.appId}/users/${userId}/players`;
         console.log("Caminho da coleção:", collectionPath);
         return collection(db, collectionPath);
-    }, [userId, appId]); // Adicionado appId como dependência
+    }, [userId]); // Adicionado appId como dependência
 
     // --- Efeito: Autenticação Firebase ---
     useEffect(() => {
         // Revertendo para a lógica de login que usa o token ou anônimo
         const signIn = async () => {
             try {
-                if (initialToken) {
+                if (firebaseConfig.initialToken) {
                     console.log("Autenticando com token customizado...");
-                    await signInWithCustomToken(auth, initialToken);
+                    await signInWithCustomToken(auth, firebaseConfig.initialToken);
                 } else {
                     console.log("Autenticando anonimamente...");
                     await signInAnonymously(auth);
@@ -283,7 +284,7 @@ export default function App() {
                     setImportError(`Falha em ${errorLines.length} linhas (ex: ${errorLines.slice(0, 5).join(', ')}).`);
                 }
             } catch (error) {
-                setImportError("Ocorreu um erro ao processar o arquivo.");
+                setImportError("Ocorreu um erro ao processar o arquivo." + error);
             } finally {
                 setIsImporting(false);
                 setFileToImport(null);
