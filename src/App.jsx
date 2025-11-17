@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import "tailwindcss";
 import { initializeApp } from 'firebase/app';
 // Trazendo de volta o signInWithCustomToken
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth'; 
