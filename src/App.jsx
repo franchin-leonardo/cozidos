@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+/* eslint-disable react-hooks/static-components */
+import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { 
   getFirestore, 
@@ -11,35 +12,34 @@ import {
   query, 
   serverTimestamp
 } from 'firebase/firestore';
-import { getAuth, signInAnonymously } from 'firebase/auth';
+import { 
+  getAuth, 
+  signInAnonymously, 
+  onAuthStateChanged 
+} from 'firebase/auth';
 
-// --- ÍCONES SVG (Substituindo lucide-react) ---
-const Shield = ({ size = 24, ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+// --- ÍCONES SVG (Mantidos) ---
+const Shield = ({ size = 24, className = "", ...props }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
 );
-const LogOut = ({ size = 24, ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+const LogOut = ({ size = 24, className = "", ...props }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
 );
-const Users = ({ size = 24, ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+const Users = ({ size = 24, className = "", ...props }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
 );
-const RefreshCw = ({ size = 24, ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+const RefreshCw = ({ size = 24, className = "", ...props }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
 );
-const Upload = ({ size = 24, ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+const Upload = ({ size = 24, className = "", ...props }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
 );
-const DollarSign = ({ size = 24, ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+const DollarSign = ({ size = 24, className = "", ...props }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
 );
-const Trash2 = ({ size = 24, ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+const Trash2 = ({ size = 24, className = "", ...props }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
 );
-// Ícones adicionais definidos para evitar erros caso sejam usados futuramente
-const UserCheck = ({ size = 24, ...props }) => <Users size={size} {...props} />; 
-const UserX = ({ size = 24, ...props }) => <Users size={size} {...props} />;
-const FileText = ({ size = 24, ...props }) => <Upload size={size} {...props} />;
-
 
 const firebaseConfig = {
   apiKey: "AIzaSyBIJBGFdDPr-p4_gVHsLJOv5cIOwSMbB1g",
@@ -50,203 +50,39 @@ const firebaseConfig = {
   appId: "1:57001878936:web:26bb7b54624697e95bf7ed",
   measurementId: "G-DLZ5T8MXPG"
 };
+
 // --- CONFIGURAÇÃO FIREBASE ---
-// const firebaseConfig = JSON.parse(__firebase_config);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? firebaseConfig.appId : 'default-app-id';
 
-// --- ESTILOS CSS PURO (Sem Tailwind) ---
-const styles = {
-  app: {
-    fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    backgroundColor: '#f0f2f5',
-    minHeight: '100vh', // Garante altura total
-    width: '100vw',     // Garante largura total da viewport
-    color: '#333',
-    margin: 0,
-    padding: 0,
-    boxSizing: 'border-box',
-    overflowX: 'hidden' // Evita scroll horizontal indesejado
-  },
-  loginContainer: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '100vh', // Mudado de height para minHeight para evitar cortes
-    width: '100vw',     // Garante largura total
-    background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
-    margin: 0,
-    padding: '20px',    // Padding para evitar que o box toque as bordas em mobile
-    boxSizing: 'border-box'
-  },
-  loginBox: {
-    background: 'white',
-    padding: '2rem',
-    borderRadius: '10px',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-    width: '100%',
-    maxWidth: '400px',
-    textAlign: 'center',
-  },
-  input: {
-    width: '100%',
-    padding: '10px',
-    margin: '10px 0',
-    borderRadius: '5px',
-    border: '1px solid #ccc',
-    boxSizing: 'border-box',
-  },
-  btnPrimary: {
-    background: '#28a745',
-    color: 'white',
-    border: 'none',
-    padding: '10px 20px',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    width: '100%',
-    marginTop: '10px',
-    fontSize: '16px',
-    fontWeight: 'bold',
-  },
-  btnSecondary: {
-    background: '#6c757d',
-    color: 'white',
-    border: 'none',
-    padding: '10px 20px',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    width: '100%',
-    marginTop: '10px',
-  },
-  header: {
-    background: '#1e3c72',
-    color: 'white',
-    padding: '1rem 2rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    width: '100%',      // Garante largura total
-    boxSizing: 'border-box'
-  },
-  main: {
-    padding: '20px',
-    maxWidth: '1200px',
-    margin: '0 auto',
-    width: '100%',      // Garante que o container principal ocupe o espaço
-    boxSizing: 'border-box'
-  },
-  tabs: {
-    display: 'flex',
-    gap: '10px',
-    marginBottom: '20px',
-    flexWrap: 'wrap',
-  },
-  tab: (active) => ({
-    padding: '10px 20px',
-    background: active ? '#1e3c72' : 'white',
-    color: active ? 'white' : '#333',
-    border: '1px solid #ddd',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    fontWeight: active ? 'bold' : 'normal',
-  }),
-  card: {
-    background: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    marginBottom: '20px',
-    width: '100%',     // Garante largura dentro do container
-    boxSizing: 'border-box'
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: '10px',
-  },
-  th: {
-    textAlign: 'left',
-    padding: '12px',
-    borderBottom: '2px solid #eee',
-    color: '#666',
-  },
-  td: {
-    padding: '12px',
-    borderBottom: '1px solid #eee',
-  },
-  badge: (type, value) => {
-    let bg = '#eee';
-    let color = '#333';
-    
-    if (type === 'level') {
-      if (value === 'A') bg = '#d4edda'; color = '#155724';
-      if (value === 'B') bg = '#cce5ff'; color = '#004085';
-      if (value === 'C') bg = '#fff3cd'; color = '#856404';
-      if (value === 'D') bg = '#f8d7da'; color = '#721c24';
-      if (value === 'E') bg = '#e2e3e5'; color = '#383d41';
-    }
-    
-    if (type === 'paid') {
-      bg = value ? '#d4edda' : '#f8d7da';
-      color = value ? '#155724' : '#721c24';
-    }
-
-    if (type === 'confirmed') {
-        bg = value ? '#c3e6cb' : '#f5c6cb';
-        color = value ? '#155724' : '#721c24';
-    }
-
-    return {
-      padding: '4px 8px',
-      borderRadius: '4px',
-      fontSize: '12px',
-      fontWeight: 'bold',
-      backgroundColor: bg,
-      color: color,
-      display: 'inline-block',
-      textAlign: 'center',
-      minWidth: '25px'
-    };
-  },
-  gridTeams: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '20px',
-  },
-  teamCard: {
-    background: 'white',
-    borderTop: '4px solid #1e3c72',
-    borderRadius: '8px',
-    padding: '15px',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-  },
-  actionBtn: {
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    padding: '5px',
-    marginRight: '5px',
-  },
-  textArea: {
-    width: '100%',
-    height: '150px',
-    padding: '10px',
-    marginBottom: '10px',
-    borderRadius: '5px',
-    border: '1px solid #ccc',
+// --- HELPERS DE ESTILO (TAILWIND) ---
+const getLevelBadgeClass = (level) => {
+  switch(level) {
+    case 'A': return 'bg-green-100 text-green-800 border border-green-200';
+    case 'B': return 'bg-blue-100 text-blue-800 border border-blue-200';
+    case 'C': return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+    case 'D': return 'bg-orange-100 text-orange-800 border border-orange-200';
+    case 'E': return 'bg-gray-100 text-gray-800 border border-gray-200';
+    default: return 'bg-gray-50 text-gray-500';
   }
+};
+
+const getConfirmedBadgeClass = (isConfirmed) => {
+  return isConfirmed 
+    ? 'bg-green-500 text-white shadow-sm' 
+    : 'bg-red-100 text-red-600 border border-red-200';
 };
 
 // --- COMPONENTE PRINCIPAL ---
 export default function App() {
-  const [user, setUser] = useState(null); // null, 'admin', 'guest'
+  const [user, setUser] = useState(null); 
+  const [firebaseUser, setFirebaseUser] = useState(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [players, setPlayers] = useState([]);
-  const [currentTab, setCurrentTab] = useState('players'); // players, draw, import
+  const [currentTab, setCurrentTab] = useState('players');
   const [teams, setTeams] = useState([]);
   
   // Form states
@@ -255,36 +91,42 @@ export default function App() {
   const [newPlayerLevel, setNewPlayerLevel] = useState('C');
   const [importText, setImportText] = useState('');
 
-  // --- AUTH INICIAL (ANÔNIMO FIREBASE PARA DADOS) ---
+  // --- AUTH INICIAL ---
   useEffect(() => {
-    const init = async () => {
-      await signInAnonymously(auth);
+    const initAuth = async () => {
+      // if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+      //   await signInWithCustomToken(auth, __initial_auth_token);
+      // } else {
+        await signInAnonymously(auth);
+      // }
     };
-    init();
+    initAuth();
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setFirebaseUser(currentUser);
+    });
+    return () => unsubscribe();
   }, []);
 
-  // --- CARREGAR DADOS DO FIRESTORE ---
+  // --- CARREGAR DADOS ---
   useEffect(() => {
-    // Usando caminho public/data para que todos vejam os mesmos dados
+    if (!firebaseUser) return;
     const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'soccer_players'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const loadedPlayers = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      // Ordenar localmente por nome
       loadedPlayers.sort((a, b) => a.name.localeCompare(b.name));
       setPlayers(loadedPlayers);
     }, (error) => {
       console.error("Erro ao carregar jogadores:", error);
     });
     return () => unsubscribe();
-  }, []);
+  }, [firebaseUser]);
 
-  // --- FUNÇÕES DE AÇÃO (FIRESTORE) ---
-  
+  // --- FUNÇÕES FIRESTORE ---
   const addPlayer = async (name, position, level) => {
-    if (!name) return;
+    if (!name || !firebaseUser) return;
     try {
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'soccer_players'), {
         name,
@@ -295,33 +137,51 @@ export default function App() {
         createdAt: serverTimestamp()
       });
     } catch (e) {
-      alert("Erro ao adicionar" + " jogador: " + e.message);
+      console.error(e);
+      alert("Erro ao adicionar jogador.");
     }
   };
 
   const updatePlayerStatus = async (id, field, currentValue) => {
-    if (user !== 'admin') return;
+    if (user !== 'admin' || !firebaseUser) return;
     const ref = doc(db, 'artifacts', appId, 'public', 'data', 'soccer_players', id);
     await updateDoc(ref, { [field]: !currentValue });
   };
 
   const deletePlayer = async (id) => {
-    if (user !== 'admin') return;
+    if (user !== 'admin' || !firebaseUser) return;
     if (window.confirm('Tem certeza que deseja remover este jogador?')) {
       await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'soccer_players', id));
     }
   };
 
+  // --- IMPORTAÇÃO ---
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setImportText(event.target.result);
+    };
+    reader.readAsText(file);
+  };
+
   const handleBulkImport = async () => {
     if (!importText) return;
-    const lines = importText.split('\n');
+    const lines = importText.split(/\r?\n/);
     let count = 0;
-    for (let line of lines) {
-      // Formato: Nome|Posição|Nivel
-      const parts = line.split('|');
+    for (const line of lines) {
+      const cleanLine = line.trim();
+      if (!cleanLine) continue; 
+      const parts = cleanLine.split('|');
       if (parts.length >= 3) {
-        await addPlayer(parts[0].trim(), parts[1].trim(), parts[2].trim().toUpperCase());
-        count++;
+        const name = parts[0].trim();
+        const position = parts[1].trim();
+        const level = parts[2].trim().toUpperCase();
+        if (name) {
+            await addPlayer(name, position, level);
+            count++;
+        }
       }
     }
     alert(`${count} jogadores importados!`);
@@ -329,32 +189,25 @@ export default function App() {
     setCurrentTab('players');
   };
 
-  // --- LÓGICA DE SORTEIO ---
+  // --- SORTEIO ---
   const generateTeams = () => {
     const confirmedPlayers = players.filter(p => p.confirmed);
-    
     if (confirmedPlayers.length < 4) {
       alert("Precisa de pelo menos 4 jogadores confirmados para gerar times.");
       return;
     }
 
-    // Agrupar por nível
     const byLevel = { A: [], B: [], C: [], D: [], E: [] };
     confirmedPlayers.forEach(p => {
       if (byLevel[p.level]) byLevel[p.level].push(p);
-      else byLevel['C'].push(p); // Fallback
+      else byLevel['C'].push(p);
     });
 
-    // Embaralhar cada nível
     const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
     Object.keys(byLevel).forEach(k => shuffle(byLevel[k]));
 
-    // Criar 4 times
     const newTeams = [[], [], [], []];
     let teamIndex = 0;
-
-    // Distribuir snake draft ou round-robin por nível (A -> B -> C -> D -> E)
-    // A ordem dos níveis garante que cada time pegue 1 A, depois 1 B, etc.
     const levels = ['A', 'B', 'C', 'D', 'E'];
     
     levels.forEach(lvl => {
@@ -364,14 +217,12 @@ export default function App() {
         teamIndex = (teamIndex + 1) % 4;
       });
     });
-
     setTeams(newTeams);
   };
 
-  // --- HANDLERS DE UI ---
+  // --- LOGIN ---
   const handleLogin = (e) => {
     e.preventDefault();
-    // Senha HARDCODED "cozida" como solicitado
     if (username === 'admin' && password === 'admin123') {
       setUser('admin');
     } else {
@@ -383,249 +234,353 @@ export default function App() {
     setUser('guest');
   };
 
-  // --- TELAS ---
+  // ESTILO GLOBAL PARA RESETAR MARGENS E GARANTIR FULL HEIGHT
+  const GlobalStyle = () => (
+    <style>{`
+      html, body, #root {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        overflow-x: hidden;
+      }
+    `}</style>
+  );
 
+  // --- TELA DE LOGIN ---
   if (!user) {
     return (
-      <div style={styles.loginContainer}>
-        <div style={styles.loginBox}>
-          <h2 style={{color: '#1e3c72', marginBottom: '20px'}}>⚽ FutManager</h2>
-          <p style={{color: '#666', marginBottom: '20px'}}>Gerenciamento de Time</p>
-          
-          <form onSubmit={handleLogin}>
-            <input 
-              style={styles.input} 
-              placeholder="Usuário (admin)" 
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-            />
-            <input 
-              style={styles.input} 
-              type="password" 
-              placeholder="Senha" 
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-            />
-            <button type="submit" style={styles.btnPrimary}>Entrar como Admin</button>
-          </form>
-          
-          <div style={{margin: '15px 0', borderTop: '1px solid #eee'}}></div>
-          
-          <button onClick={handleGuestLogin} style={styles.btnSecondary}>
-            Acessar como Visitante
-          </button>
+      <>
+        <GlobalStyle />
+        <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-900 to-blue-700 p-4">
+          <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md text-center transform transition-all hover:scale-105 duration-300">
+            <div className="mb-6 flex justify-center">
+               <div className="bg-blue-100 p-3 rounded-full">
+                  <Shield size={48} className="text-blue-900" />
+               </div>
+            </div>
+            <h2 className="text-3xl font-bold text-blue-900 mb-2">FutManager</h2>
+            <p className="text-gray-500 mb-8">Gerenciamento profissional de peladas</p>
+            
+            <form onSubmit={handleLogin} className="space-y-4">
+              <input 
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                placeholder="Usuário (admin)" 
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+              />
+              <input 
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                type="password" 
+                placeholder="Senha" 
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+              <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-md transition transform hover:-translate-y-1">
+                Entrar como Admin
+              </button>
+            </form>
+            
+            <div className="my-6 border-t border-gray-200"></div>
+            
+            <button onClick={handleGuestLogin} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-lg transition">
+              Acessar como Visitante
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
+  // --- TELA PRINCIPAL ---
   return (
-    <div style={styles.app}>
-      {/* Header */}
-      <header style={styles.header}>
-        <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-          <Shield size={24} />
-          <h1 style={{margin: 0, fontSize: '1.5rem'}}>FutManager</h1>
-        </div>
-        <div style={{display: 'flex', alignItems: 'center', gap: '20px'}}>
-          <span>Olá, <strong>{user === 'admin' ? 'Administrador' : 'Visitante'}</strong></span>
-          <button 
-            onClick={() => setUser(null)} 
-            style={{...styles.actionBtn, color: 'white', display: 'flex', alignItems: 'center', gap: '5px'}}
-          >
-            <LogOut size={18} /> Sair
-          </button>
-        </div>
-      </header>
-
-      <main style={styles.main}>
-        
-        {/* Abas de Navegação */}
-        <div style={styles.tabs}>
-          <button style={styles.tab(currentTab === 'players')} onClick={() => setCurrentTab('players')}>
-            <Users size={16} style={{marginRight: 5}}/> Jogadores ({players.length})
-          </button>
-          <button style={styles.tab(currentTab === 'draw')} onClick={() => setCurrentTab('draw')}>
-            <RefreshCw size={16} style={{marginRight: 5}}/> Sorteio de Times
-          </button>
-          {user === 'admin' && (
-            <button style={styles.tab(currentTab === 'import')} onClick={() => setCurrentTab('import')}>
-              <Upload size={16} style={{marginRight: 5}}/> Importar TXT
-            </button>
-          )}
-        </div>
-
-        {/* CONTEÚDO: LISTA DE JOGADORES */}
-        {currentTab === 'players' && (
-          <div style={styles.card}>
-            {user === 'admin' && (
-              <div style={{marginBottom: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '15px', background: '#f8f9fa', borderRadius: '5px'}}>
-                <input 
-                  style={{...styles.input, width: 'auto', flex: 2, margin: 0}} 
-                  placeholder="Nome do Jogador"
-                  value={newPlayerName}
-                  onChange={e => setNewPlayerName(e.target.value)}
-                />
-                <select 
-                  style={{...styles.input, width: 'auto', flex: 1, margin: 0}} 
-                  value={newPlayerPos}
-                  onChange={e => setNewPlayerPos(e.target.value)}
-                >
-                  <option>Ataque</option>
-                  <option>Meio</option>
-                  <option>Defesa</option>
-                  <option>Goleiro</option>
-                </select>
-                <select 
-                  style={{...styles.input, width: 'auto', flex: 1, margin: 0}} 
-                  value={newPlayerLevel}
-                  onChange={e => setNewPlayerLevel(e.target.value)}
-                >
-                  <option>A</option>
-                  <option>B</option>
-                  <option>C</option>
-                  <option>D</option>
-                  <option>E</option>
-                </select>
-                <button 
-                  style={{...styles.btnPrimary, width: 'auto', marginTop: 0, background: '#1e3c72'}}
-                  onClick={() => {
-                    addPlayer(newPlayerName, newPlayerPos, newPlayerLevel);
-                    setNewPlayerName('');
-                  }}
-                >
-                  Adicionar
-                </button>
-              </div>
-            )}
-
-            <div style={{overflowX: 'auto'}}>
-              <table style={styles.table}>
-                <thead>
-                  <tr>
-                    <th style={styles.th}>Nome</th>
-                    <th style={styles.th}>Posição</th>
-                    <th style={styles.th}>Nível</th>
-                    <th style={styles.th}>Pagamento</th>
-                    <th style={styles.th}>Presença</th>
-                    {user === 'admin' && <th style={styles.th}>Ações</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {players.map(player => (
-                    <tr key={player.id}>
-                      <td style={styles.td}><strong>{player.name}</strong></td>
-                      <td style={styles.td}>{player.position}</td>
-                      <td style={styles.td}>
-                        <span style={styles.badge('level', player.level)}>{player.level}</span>
-                      </td>
-                      <td style={styles.td}>
-                        <div 
-                          onClick={() => updatePlayerStatus(player.id, 'paid', player.paid)}
-                          style={{
-                            cursor: user === 'admin' ? 'pointer' : 'default',
-                            opacity: player.paid ? 1 : 0.5,
-                            display: 'flex', alignItems: 'center', gap: '5px'
-                          }}
-                        >
-                          <DollarSign size={18} color={player.paid ? 'green' : 'red'} />
-                          {player.paid ? 'Pago' : 'Pendente'}
-                        </div>
-                      </td>
-                      <td style={styles.td}>
-                        <div 
-                          onClick={() => updatePlayerStatus(player.id, 'confirmed', player.confirmed)}
-                          style={{
-                            cursor: user === 'admin' ? 'pointer' : 'default',
-                            ...styles.badge('confirmed', player.confirmed)
-                          }}
-                        >
-                           {player.confirmed ? 'Confirmado' : 'Ausente'}
-                        </div>
-                      </td>
-                      {user === 'admin' && (
-                        <td style={styles.td}>
-                          <button style={{...styles.actionBtn, color: '#dc3545'}} onClick={() => deletePlayer(player.id)}>
-                            <Trash2 size={18} />
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                  {players.length === 0 && (
-                    <tr>
-                      <td colSpan="6" style={{textAlign: 'center', padding: '20px', color: '#999'}}>
-                        Nenhum jogador cadastrado.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+    <>
+      <GlobalStyle />
+      <div className="min-h-screen w-full flex flex-col bg-gray-100 font-sans text-gray-800">
+        {/* Header */}
+        <header className="bg-blue-900 text-white shadow-lg flex-shrink-0">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-3">
+              <Shield size={32} className="text-yellow-400" />
+              <h1 className="text-2xl font-bold tracking-tight">FutManager</h1>
+            </div>
+            <div className="flex items-center gap-6 bg-blue-800/50 px-4 py-2 rounded-full">
+              <span className="text-sm md:text-base">
+                Olá, <strong className="text-yellow-300">{user === 'admin' ? 'Administrador' : 'Visitante'}</strong>
+              </span>
+              <button 
+                onClick={() => setUser(null)} 
+                className="flex items-center gap-2 text-white hover:text-red-300 transition"
+              >
+                <LogOut size={18} /> Sair
+              </button>
             </div>
           </div>
-        )}
+        </header>
 
-        {/* CONTEÚDO: SORTEIO */}
-        {currentTab === 'draw' && (
-          <div>
-             <div style={styles.card}>
-               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                 <h3>Jogadores Confirmados: {players.filter(p => p.confirmed).length}</h3>
+        <main className="flex-grow max-w-7xl mx-auto p-4 md:p-8 w-full">
+          
+          {/* Tabs Navigation */}
+          <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-200 pb-1">
+            {[
+              { id: 'players', label: `Jogadores (${players.length})`, icon: Users },
+              { id: 'draw', label: 'Sorteio', icon: RefreshCw },
+              ...(user === 'admin' ? [{ id: 'import', label: 'Importar', icon: Upload }] : [])
+            ].map((tab) => (
+              <button 
+                key={tab.id}
+                onClick={() => setCurrentTab(tab.id)}
+                className={`
+                  flex items-center gap-2 px-6 py-3 rounded-t-lg transition-all font-medium text-sm md:text-base
+                  ${currentTab === tab.id 
+                    ? 'bg-white text-blue-900 border-t-2 border-blue-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]' 
+                    : 'text-gray-500 hover:text-blue-700 hover:bg-white/50'}
+                `}
+              >
+                <tab.icon size={18} /> {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* ABA JOGADORES */}
+          {currentTab === 'players' && (
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              {user === 'admin' && (
+                <div className="p-6 bg-gray-50 border-b border-gray-200">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-grow">
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nome do Jogador</label>
+                      <input 
+                        className="w-full px-4 py-2 rounded border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                        placeholder="Ex: Ronaldinho Gaúcho"
+                        value={newPlayerName}
+                        onChange={e => setNewPlayerName(e.target.value)}
+                      />
+                    </div>
+                    <div className="w-full md:w-48">
+                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Posição</label>
+                      <select 
+                        className="w-full px-4 py-2 rounded border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={newPlayerPos}
+                        onChange={e => setNewPlayerPos(e.target.value)}
+                      >
+                        <option>Ataque</option>
+                        <option>Meio</option>
+                        <option>Defesa</option>
+                        <option>Goleiro</option>
+                      </select>
+                    </div>
+                    <div className="w-full md:w-24">
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nível</label>
+                      <select 
+                        className="w-full px-4 py-2 rounded border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={newPlayerLevel}
+                        onChange={e => setNewPlayerLevel(e.target.value)}
+                      >
+                        <option>A</option>
+                        <option>B</option>
+                        <option>C</option>
+                        <option>D</option>
+                        <option>E</option>
+                      </select>
+                    </div>
+                    <div className="flex items-end">
+                      <button 
+                        className="w-full md:w-auto bg-blue-900 hover:bg-blue-800 text-white font-bold px-6 py-2 rounded shadow transition flex items-center justify-center gap-2 h-[42px]"
+                        onClick={() => {
+                          addPlayer(newPlayerName, newPlayerPos, newPlayerLevel);
+                          setNewPlayerName('');
+                        }}
+                      >
+                        Adicionar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 text-gray-500 text-xs uppercase border-b border-gray-200">
+                      <th className="p-4 font-semibold">Nome</th>
+                      <th className="p-4 font-semibold">Posição</th>
+                      <th className="p-4 font-semibold text-center">Nível</th>
+                      <th className="p-4 font-semibold">Pagamento</th>
+                      <th className="p-4 font-semibold text-center">Presença</th>
+                      {user === 'admin' && <th className="p-4 font-semibold text-right">Ações</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {players.map(player => (
+                      <tr key={player.id} className="hover:bg-blue-50/30 transition duration-150">
+                        <td className="p-4 font-medium text-gray-900">{player.name}</td>
+                        <td className="p-4 text-gray-600">{player.position}</td>
+                        <td className="p-4 text-center">
+                          <span className={`inline-block px-2 py-1 rounded text-xs font-bold w-8 ${getLevelBadgeClass(player.level)}`}>
+                            {player.level}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div 
+                            onClick={() => updatePlayerStatus(player.id, 'paid', player.paid)}
+                            className={`
+                              flex items-center gap-2 text-sm font-medium select-none
+                              ${user === 'admin' ? 'cursor-pointer hover:opacity-80' : ''}
+                              ${player.paid ? 'text-green-700' : 'text-red-500'}
+                            `}
+                          >
+                            <div className={`p-1 rounded-full ${player.paid ? 'bg-green-100' : 'bg-red-100'}`}>
+                              <DollarSign size={14} />
+                            </div>
+                            {player.paid ? 'Pago' : 'Pendente'}
+                          </div>
+                        </td>
+                        <td className="p-4 text-center">
+                           <button
+                            onClick={() => updatePlayerStatus(player.id, 'confirmed', player.confirmed)}
+                            disabled={user !== 'admin'}
+                            className={`
+                              px-3 py-1 rounded-full text-xs font-bold tracking-wide transition-all
+                              ${user === 'admin' ? 'hover:shadow-md' : 'cursor-default'}
+                              ${getConfirmedBadgeClass(player.confirmed)}
+                            `}
+                          >
+                             {player.confirmed ? 'CONFIRMADO' : 'AUSENTE'}
+                          </button>
+                        </td>
+                        {user === 'admin' && (
+                          <td className="p-4 text-right">
+                            <button 
+                              className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition" 
+                              onClick={() => deletePlayer(player.id)}
+                              title="Remover Jogador"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                    {players.length === 0 && (
+                      <tr>
+                        <td colSpan="6" className="p-12 text-center text-gray-400 italic">
+                          Nenhum jogador na lista. Adicione alguém acima!
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ABA SORTEIO */}
+          {currentTab === 'draw' && (
+            <div className="space-y-6">
+               <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-900 flex flex-col md:flex-row justify-between items-center gap-4">
+                 <div>
+                   <h3 className="text-lg font-bold text-gray-900">
+                      Jogadores Confirmados: <span className="text-blue-600 text-2xl">{players.filter(p => p.confirmed).length}</span>
+                   </h3>
+                   <p className="text-gray-500 text-sm mt-1">
+                     O algoritmo distribui equitativamente os níveis (A-E) entre os times.
+                   </p>
+                 </div>
                  {user === 'admin' && (
-                   <button style={{...styles.btnPrimary, width: 'auto', marginTop: 0}} onClick={generateTeams}>
-                     Sortear 4 Times
+                   <button 
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-lg shadow-lg transition flex items-center gap-2" 
+                    onClick={generateTeams}
+                   >
+                     <RefreshCw size={20} /> Sortear Equipes
                    </button>
                  )}
                </div>
-               <p style={{color: '#666', fontSize: '14px'}}>
-                 O sistema irá distribuir os jogadores confirmados tentando colocar 1 de cada nível (A,B,C,D,E) em cada time.
-               </p>
-             </div>
 
-             {teams.length > 0 && (
-               <div style={styles.gridTeams}>
-                 {teams.map((team, idx) => (
-                   <div key={idx} style={styles.teamCard}>
-                     <h3 style={{margin: '0 0 10px 0', color: '#1e3c72'}}>Time {idx + 1}</h3>
-                     <ul style={{listStyle: 'none', padding: 0}}>
-                       {team.map(p => (
-                         <li key={p.id} style={{borderBottom: '1px solid #eee', padding: '8px 0', display: 'flex', justifyContent: 'space-between'}}>
-                           <span>{p.name} <small>({p.position})</small></span>
-                           <span style={styles.badge('level', p.level)}>{p.level}</span>
-                         </li>
-                       ))}
-                     </ul>
-                     <div style={{marginTop: '10px', fontSize: '12px', color: '#666', textAlign: 'right'}}>
-                       Total: {team.length} jogadores
+               {teams.length > 0 && (
+                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                   {teams.map((team, idx) => (
+                     <div key={idx} className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col h-full">
+                       <div className="bg-blue-900 p-4 flex justify-between items-center">
+                          <h3 className="text-white font-bold text-lg">Time {idx + 1}</h3>
+                          <span className="text-blue-200 text-xs font-mono bg-blue-800 px-2 py-1 rounded">
+                            {team.length} JOG
+                          </span>
+                       </div>
+                       <div className="p-4 flex-grow">
+                         <ul className="space-y-2">
+                           {team.map(p => (
+                             <li key={p.id} className="flex justify-between items-center p-2 hover:bg-gray-50 rounded border-b border-gray-100 last:border-0">
+                               <div className="flex flex-col">
+                                 <span className="font-semibold text-gray-800 text-sm">{p.name}</span>
+                                 <span className="text-xs text-gray-500">{p.position}</span>
+                               </div>
+                               <span className={`text-xs font-bold px-2 py-1 rounded ${getLevelBadgeClass(p.level)}`}>
+                                 {p.level}
+                               </span>
+                             </li>
+                           ))}
+                         </ul>
+                       </div>
                      </div>
-                   </div>
-                 ))}
-               </div>
-             )}
-          </div>
-        )}
+                   ))}
+                 </div>
+               )}
+            </div>
+          )}
 
-        {/* CONTEÚDO: IMPORTAÇÃO */}
-        {currentTab === 'import' && user === 'admin' && (
-          <div style={styles.card}>
-            <h3>Importar Jogadores em Massa</h3>
-            <p>Cole a lista abaixo no formato: <code>Nome|Posição|Nível</code> (um por linha)</p>
-            <p style={{fontSize: '12px', color: '#666'}}>Exemplo: <br/>João Silva|Ataque|A<br/>Pedro Santos|Defesa|C</p>
-            
-            <textarea 
-              style={styles.textArea}
-              value={importText}
-              onChange={e => setImportText(e.target.value)}
-              placeholder="Cole aqui..."
-            />
-            
-            <button style={{...styles.btnPrimary, background: '#17a2b8'}} onClick={handleBulkImport}>
-              Processar Importação
-            </button>
-          </div>
-        )}
+          {/* ABA IMPORTAÇÃO */}
+          {currentTab === 'import' && user === 'admin' && (
+            <div className="max-w-2xl mx-auto space-y-6">
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <Upload className="text-blue-600" size={24} /> Importar Jogadores
+                </h3>
+                
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6">
+                  <h4 className="font-semibold text-blue-900 text-sm mb-2">Formato do Arquivo:</h4>
+                  <code className="block bg-white border border-blue-200 p-3 rounded text-xs text-gray-600 font-mono">
+                    Nome|Posição|Nível<br/>
+                    João Silva|Ataque|A<br/>
+                    Pedro Santos|Defesa|C
+                  </code>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition relative group">
+                    <input 
+                      type="file" 
+                      accept=".txt" 
+                      onChange={handleFileUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <Upload className="mx-auto text-gray-400 mb-2 group-hover:text-blue-500 transition" size={32} />
+                    <p className="text-sm font-medium text-gray-600">Clique para enviar o arquivo .txt</p>
+                  </div>
 
-      </main>
-    </div>
+                  <div className="relative">
+                    <span className="absolute -top-3 left-3 bg-white px-2 text-xs font-bold text-gray-500">Ou cole o texto aqui</span>
+                    <textarea 
+                      className="w-full h-40 p-4 rounded-lg border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
+                      value={importText}
+                      onChange={e => setImportText(e.target.value)}
+                      placeholder="Cole os dados aqui..."
+                    />
+                  </div>
+                  
+                  <button 
+                    className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2" 
+                    onClick={handleBulkImport}
+                  >
+                    Processar Importação
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </main>
+      </div>
+    </>
   );
 }
