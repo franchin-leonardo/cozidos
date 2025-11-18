@@ -22,6 +22,10 @@ const Trash2 = ({ size = 24, className = "", ...props }) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
 );
 
+const Play = ({ size = 24, className = "", ...props }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="5 3 19 12 5 21 5 3"/></svg>
+);
+
 const Shield = ({ size = 24, className = "", ...props }) => (
   <img src={shieldSvg} alt="shield" width={size} height={size} className={className} {...props} />
 );// --- HELPERS DE ESTILO ---
@@ -52,6 +56,7 @@ export default function App() {
   
   const [currentTab, setCurrentTab] = useState('players');
   const [teams, setTeams] = useState([]);
+  const [matches, setMatches] = useState([]);
   
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerPos, setNewPlayerPos] = useState('Meio');
@@ -179,6 +184,150 @@ export default function App() {
     setTeams(newTeams);
   };
 
+  const generateMatches = () => {
+    if (teams.length !== 4) {
+      alert("Antes sorteie os times!");
+      return;
+    }
+
+    const newMatches = [
+      // Rodada 1: A vs B, C vs D
+      {
+        id: 1,
+        teamA: teams[0],
+        teamB: teams[1],
+        scoreA: 0,
+        scoreB: 0,
+        finished: false,
+        round: 1
+      },
+      {
+        id: 2,
+        teamA: teams[2],
+        teamB: teams[3],
+        scoreA: 0,
+        scoreB: 0,
+        finished: false,
+        round: 1
+      },
+      // Rodada 2: A vs C, B vs D
+      {
+        id: 3,
+        teamA: teams[0],
+        teamB: teams[2],
+        scoreA: 0,
+        scoreB: 0,
+        finished: false,
+        round: 2
+      },
+      {
+        id: 4,
+        teamA: teams[1],
+        teamB: teams[3],
+        scoreA: 0,
+        scoreB: 0,
+        finished: false,
+        round: 2
+      },
+      // Rodada 3: A vs D, B vs C
+      {
+        id: 5,
+        teamA: teams[0],
+        teamB: teams[3],
+        scoreA: 0,
+        scoreB: 0,
+        finished: false,
+        round: 3
+      },
+      {
+        id: 6,
+        teamA: teams[1],
+        teamB: teams[2],
+        scoreA: 0,
+        scoreB: 0,
+        finished: false,
+        round: 3
+      },
+      // Rodada 4: B vs A, D vs C (reverso)
+      {
+        id: 7,
+        teamA: teams[1],
+        teamB: teams[0],
+        scoreA: 0,
+        scoreB: 0,
+        finished: false,
+        round: 4
+      },
+      {
+        id: 8,
+        teamA: teams[3],
+        teamB: teams[2],
+        scoreA: 0,
+        scoreB: 0,
+        finished: false,
+        round: 4
+      },
+      // Rodada 5: C vs A, D vs B (reverso)
+      {
+        id: 9,
+        teamA: teams[2],
+        teamB: teams[0],
+        scoreA: 0,
+        scoreB: 0,
+        finished: false,
+        round: 5
+      },
+      {
+        id: 10,
+        teamA: teams[3],
+        teamB: teams[1],
+        scoreA: 0,
+        scoreB: 0,
+        finished: false,
+        round: 5
+      },
+      // Rodada 6: D vs A, C vs B (reverso)
+      {
+        id: 11,
+        teamA: teams[3],
+        teamB: teams[0],
+        scoreA: 0,
+        scoreB: 0,
+        finished: false,
+        round: 6
+      },
+      {
+        id: 12,
+        teamA: teams[2],
+        teamB: teams[1],
+        scoreA: 0,
+        scoreB: 0,
+        finished: false,
+        round: 6
+      }
+    ];
+
+    setMatches(newMatches);
+  };
+
+  const updateMatchScore = (matchId, teamSide, value) => {
+    if (user !== 'admin') return;
+    setMatches(prev => prev.map(match => 
+      match.id === matchId 
+        ? { ...match, [teamSide === 'A' ? 'scoreA' : 'scoreB']: Math.max(0, value) }
+        : match
+    ));
+  };
+
+  const toggleMatchFinished = (matchId) => {
+    if (user !== 'admin') return;
+    setMatches(prev => prev.map(match => 
+      match.id === matchId 
+        ? { ...match, finished: !match.finished }
+        : match
+    ));
+  };
+
   // --- LOGIN ---
   const handleLogin = (e) => {
     e.preventDefault();
@@ -285,6 +434,7 @@ export default function App() {
             {[
               { id: 'players', label: `Jogadores (${players.length})`, icon: Users },
               { id: 'draw', label: 'Sorteio', icon: RefreshCw },
+              { id: 'matches', label: 'Jogos', icon: Play },
               ...(user === 'admin' ? [{ id: 'import', label: 'Importar', icon: Upload }] : [])
             ].map((tab) => (
               <button 
@@ -486,6 +636,129 @@ export default function App() {
                    ))}
                  </div>
                )}
+            </div>
+          )}
+
+          {/* ABA JOGOS */}
+          {currentTab === 'matches' && (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-pink-900">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">
+                      Confrontos: <span className="text-pink-600 text-2xl">{matches.length}</span>
+                    </h3>
+                    <p className="text-gray-500 text-sm mt-1">
+                      12 jogos em 6 rodadas - Todos os times se enfrentam
+                    </p>
+                  </div>
+                  {user === 'admin' && (
+                    <button 
+                      className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-lg shadow-lg transition flex items-center gap-2" 
+                      onClick={generateMatches}
+                    >
+                      <Play size={20} /> Gerar Jogos
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {matches.length > 0 && (
+                <div className="space-y-8">
+                  {[1, 2, 3, 4, 5, 6].map((round) => {
+                    const roundMatches = matches.filter(m => m.round === round);
+                    const finishedCount = roundMatches.filter(m => m.finished).length;
+                    return (
+                      <div key={round} className="bg-white rounded-xl shadow-md overflow-hidden">
+                        <div className="bg-pink-900 p-4 flex justify-between items-center">
+                          <h3 className="text-white font-bold text-lg">Rodada {round}</h3>
+                          <span className="text-pink-100 text-sm">
+                            {finishedCount}/{roundMatches.length} finalizados
+                          </span>
+                        </div>
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {roundMatches.map((match) => (
+                            <div key={match.id} className={`rounded-lg p-4 border-2 ${match.finished ? 'border-green-300 bg-green-50' : 'border-pink-200 bg-white'}`}>
+                              <div className="flex justify-between items-center mb-3">
+                                <h4 className="font-bold text-gray-800">Jogo {match.id}</h4>
+                                {user === 'admin' && (
+                                  <button 
+                                    onClick={() => toggleMatchFinished(match.id)}
+                                    className={`text-xs font-bold px-2 py-1 rounded transition ${
+                                      match.finished 
+                                        ? 'bg-green-200 text-green-800' 
+                                        : 'bg-yellow-200 text-yellow-800'
+                                    }`}
+                                  >
+                                    {match.finished ? '✓' : 'Em Jogo'}
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Time A */}
+                              <div className="mb-3 pb-3 border-b border-gray-300">
+                                <div className="text-xs text-gray-500 font-semibold mb-1">Time A</div>
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                  {match.teamA.map(p => (
+                                    <span key={p.id} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+                                      {p.name}
+                                    </span>
+                                  ))}
+                                </div>
+                                {user === 'admin' && (
+                                  <div className="flex items-center gap-2">
+                                    <input 
+                                      type="number" 
+                                      min="0" 
+                                      value={match.scoreA} 
+                                      onChange={(e) => updateMatchScore(match.id, 'A', parseInt(e.target.value) || 0)}
+                                      className="w-12 px-2 py-1 border border-gray-300 rounded text-center font-bold text-lg"
+                                    />
+                                    <span className="text-gray-600 text-sm">gols</span>
+                                  </div>
+                                )}
+                                {user !== 'admin' && (
+                                  <div className="text-2xl font-bold text-pink-600">{match.scoreA}</div>
+                                )}
+                              </div>
+
+                              {/* Score vs */}
+                              <div className="text-center py-1 font-bold text-gray-400 text-sm">VS</div>
+
+                              {/* Time B */}
+                              <div className="pt-3">
+                                <div className="text-xs text-gray-500 font-semibold mb-1">Time B</div>
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                  {match.teamB.map(p => (
+                                    <span key={p.id} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+                                      {p.name}
+                                    </span>
+                                  ))}
+                                </div>
+                                {user === 'admin' && (
+                                  <div className="flex items-center gap-2">
+                                    <input 
+                                      type="number" 
+                                      min="0" 
+                                      value={match.scoreB} 
+                                      onChange={(e) => updateMatchScore(match.id, 'B', parseInt(e.target.value) || 0)}
+                                      className="w-12 px-2 py-1 border border-gray-300 rounded text-center font-bold text-lg"
+                                    />
+                                    <span className="text-gray-600 text-sm">gols</span>
+                                  </div>
+                                )}
+                                {user !== 'admin' && (
+                                  <div className="text-2xl font-bold text-pink-600">{match.scoreB}</div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
