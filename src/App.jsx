@@ -1,27 +1,8 @@
 /* eslint-disable react-hooks/static-components */
-import React, { useState, useEffect } from 'react';
-import { initializeApp } from 'firebase/app';
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  onSnapshot, 
-  query, 
-  serverTimestamp
-} from 'firebase/firestore';
-import { 
-  getAuth, 
-  signInAnonymously, 
-  onAuthStateChanged 
-} from 'firebase/auth';
+import { useState } from 'react';
+import shieldSvg from './assets/shield.svg';
 
-// --- ÍCONES SVG (Mantidos) ---
-const Shield = ({ size = 24, className = "", ...props }) => (
-  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-);
+
 const LogOut = ({ size = 24, className = "", ...props }) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
 );
@@ -41,27 +22,13 @@ const Trash2 = ({ size = 24, className = "", ...props }) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
 );
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBIJBGFdDPr-p4_gVHsLJOv5cIOwSMbB1g",
-  authDomain: "cozidos-3f892.firebaseapp.com",
-  projectId: "cozidos-3f892",
-  storageBucket: "cozidos-3f892.firebasestorage.app",
-  messagingSenderId: "57001878936",
-  appId: "1:57001878936:web:26bb7b54624697e95bf7ed",
-  measurementId: "G-DLZ5T8MXPG"
-};
-
-// --- CONFIGURAÇÃO FIREBASE ---
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? firebaseConfig.appId : 'default-app-id';
-
-// --- HELPERS DE ESTILO (TAILWIND) ---
+const Shield = ({ size = 24, className = "", ...props }) => (
+  <img src={shieldSvg} alt="shield" width={size} height={size} className={className} {...props} />
+);// --- HELPERS DE ESTILO ---
 const getLevelBadgeClass = (level) => {
   switch(level) {
     case 'A': return 'bg-green-100 text-green-800 border border-green-200';
-    case 'B': return 'bg-blue-100 text-blue-800 border border-blue-200';
+    case 'B': return 'bg-blue-100 text-blue-800 border border-blue-200'; // Mantido azul para contraste de nível
     case 'C': return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
     case 'D': return 'bg-orange-100 text-orange-800 border border-orange-200';
     case 'E': return 'bg-gray-100 text-gray-800 border border-gray-200';
@@ -78,88 +45,50 @@ const getConfirmedBadgeClass = (isConfirmed) => {
 // --- COMPONENTE PRINCIPAL ---
 export default function App() {
   const [user, setUser] = useState(null); 
-  const [firebaseUser, setFirebaseUser] = useState(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  
   const [players, setPlayers] = useState([]);
+  
   const [currentTab, setCurrentTab] = useState('players');
   const [teams, setTeams] = useState([]);
   
-  // Form states
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerPos, setNewPlayerPos] = useState('Meio');
   const [newPlayerLevel, setNewPlayerLevel] = useState('C');
   const [importText, setImportText] = useState('');
 
-  // --- AUTH INICIAL ---
-  useEffect(() => {
-    const initAuth = async () => {
-      // if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-      //   await signInWithCustomToken(auth, __initial_auth_token);
-      // } else {
-        await signInAnonymously(auth);
-      // }
+  // --- FUNÇÕES DE GERENCIAMENTO DE ESTADO (LOCAL) ---
+  
+  const addPlayer = (name, position, level) => {
+    if (!name) return;
+    const newPlayer = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9), 
+      name,
+      position,
+      level,
+      paid: false,
+      confirmed: false,
+      createdAt: new Date()
     };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setFirebaseUser(currentUser);
+    
+    setPlayers(prev => {
+      const updated = [...prev, newPlayer];
+      return updated.sort((a, b) => a.name.localeCompare(b.name));
     });
-    return () => unsubscribe();
-  }, []);
-
-  // --- CARREGAR DADOS ---
-  useEffect(() => {
-    if (!firebaseUser) return;
-    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'soccer_players'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const loadedPlayers = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      loadedPlayers.sort((a, b) => a.name.localeCompare(b.name));
-      setPlayers(loadedPlayers);
-    }, (error) => {
-      console.error("Erro ao carregar jogadores:", error);
-    });
-    return () => unsubscribe();
-  }, [firebaseUser]);
-
-  // --- FUNÇÕES FIRESTORE ---
-  const addPlayer = async (name, position, level) => {
-    if (!name) {
-      console.error('Nome vazio');
-      throw new Error('Nome é obrigatório');
-    }
-    if (!firebaseUser) {
-      console.error('Usuário não autenticado');
-      throw new Error('Usuário não autenticado');
-    }
-    try {
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'soccer_players'), {
-        name,
-        position,
-        level,
-        paid: false,
-        confirmed: false,
-        createdAt: serverTimestamp()
-      });
-      console.log('Jogador adicionado ao Firebase:', name);
-    } catch (e) {
-      console.error('Erro ao adicionar jogador no Firebase:', e);
-      throw e;
-    }
   };
 
-  const updatePlayerStatus = async (id, field, currentValue) => {
-    if (user !== 'admin' || !firebaseUser) return;
-    const ref = doc(db, 'artifacts', appId, 'public', 'data', 'soccer_players', id);
-    await updateDoc(ref, { [field]: !currentValue });
+  const updatePlayerStatus = (id, field, currentValue) => {
+    if (user !== 'admin') return;
+    setPlayers(prev => prev.map(p => 
+      p.id === id ? { ...p, [field]: !currentValue } : p
+    ));
   };
 
-  const deletePlayer = async (id) => {
-    if (user !== 'admin' || !firebaseUser) return;
+  const deletePlayer = (id) => {
+    if (user !== 'admin') return;
     if (window.confirm('Tem certeza que deseja remover este jogador?')) {
-      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'soccer_players', id));
+      setPlayers(prev => prev.filter(p => p.id !== id));
     }
   };
 
@@ -168,57 +97,32 @@ export default function App() {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onerror = () => {
-      console.error('Erro ao ler arquivo:', reader.error);
-      alert('Erro ao ler o arquivo');
-    };
     reader.onload = (event) => {
-      const content = event.target.result;
-      console.log('Arquivo carregado:', content);
-      console.log('Comprimento:', content.length);
-      setImportText(content);
+      setImportText(event.target.result);
     };
-    reader.readAsText(file, 'UTF-8');
+    reader.readAsText(file);
   };
 
-  const handleBulkImport = async () => {
+  const handleBulkImport = () => {
     if (!importText) return;
     
-    // Normalizar quebras de linha e dividir
-    const normalizedText = importText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    const lines = normalizedText.split('\n').filter(line => line.trim().length > 0);
-    
-    console.log('Número de linhas:', lines.length);
-    console.log('Todas as linhas:', lines);
-    
-    let count = 0;
-    let errors = [];
-    const importedPlayers = [];
+    const lines = importText.split(/\r\n|\n|\r/);
+    const newPlayersToAdd = [];
+    let validCount = 0;
     
     for (const line of lines) {
       const cleanLine = line.trim();
-      console.log('Processando linha:', `"${cleanLine}"`);
-      
-      if (!cleanLine) {
-        console.log('Linha vazia, pulando');
-        continue;
-      }
-      
-      const parts = cleanLine.split('|').map(p => p.trim());
-      console.log('Partes da linha:', parts, 'Comprimento:', parts.length);
-      
+      if (!cleanLine) continue; 
+
+      const parts = cleanLine.split('|');
       if (parts.length >= 3) {
-        const name = parts[0];
-        const position = parts[1];
-        const level = parts[2].toUpperCase();
-        
-        console.log('Adicionando - Nome:', name, 'Posição:', position, 'Nível:', level);
-        
-        if (name && name.length > 0) {
-          try {
-            // Criar jogador no state sem adicionar ao Firebase
-            importedPlayers.push({
-              id: `temp-${Date.now()}-${count}`,
+        const name = parts[0].trim();
+        const position = parts[1].trim();
+        const level = parts[2].trim().toUpperCase();
+
+        if (name) {
+            newPlayersToAdd.push({
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9) + validCount,
               name,
               position,
               level,
@@ -226,30 +130,22 @@ export default function App() {
               confirmed: false,
               createdAt: new Date()
             });
-            count++;
-            console.log('Jogador adicionado ao state com sucesso');
-          } catch (e) {
-            console.error('Erro ao processar jogador:', e);
-            errors.push(`${name}: ${e.message}`);
-          }
+            validCount++;
         }
-      } else {
-        console.log('Linha não tem 3 partes (|), pulando');
       }
     }
-    
-    // Adicionar os jogadores importados ao state
-    if (importedPlayers.length > 0) {
-      setPlayers([...players, ...importedPlayers]);
+
+    if (validCount > 0) {
+      setPlayers(prev => {
+        const updated = [...prev, ...newPlayersToAdd];
+        return updated.sort((a, b) => a.name.localeCompare(b.name));
+      });
+      alert(`${validCount} jogadores importados com sucesso!`);
+      setImportText('');
+      setCurrentTab('players');
+    } else {
+      alert('Nenhuma linha válida encontrada. Verifique o formato: Nome|Posição|Nivel');
     }
-    
-    let message = `${count} jogadores importados!`;
-    if (errors.length > 0) {
-      message += `\n\nErros (${errors.length}):\n${errors.join('\n')}`;
-    }
-    alert(message);
-    setImportText('');
-    setCurrentTab('players');
   };
 
   // --- SORTEIO ---
@@ -297,7 +193,7 @@ export default function App() {
     setUser('guest');
   };
 
-  // ESTILO GLOBAL PARA RESETAR MARGENS E GARANTIR FULL HEIGHT
+  // ESTILO GLOBAL
   const GlobalStyle = () => (
     <style>{`
       html, body, #root {
@@ -315,25 +211,25 @@ export default function App() {
     return (
       <>
         <GlobalStyle />
-        <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-900 to-blue-700 p-4">
+        <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-pink-900 to-pink-700 p-4">
           <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md text-center transform transition-all hover:scale-105 duration-300">
             <div className="mb-6 flex justify-center">
-               <div className="bg-blue-100 p-3 rounded-full">
-                  <Shield size={48} className="text-blue-900" />
+               <div className="bg-pink-100 p-3 rounded-full">
+                  <Shield size={48} className="text-pink-900" />
                </div>
             </div>
-            <h2 className="text-3xl font-bold text-blue-900 mb-2">FutManager</h2>
-            <p className="text-gray-500 mb-8">Gerenciamento profissional de peladas</p>
+            <h2 className="text-3xl font-bold text-pink-900 mb-2">FutManager</h2>
+            <p className="text-gray-500 mb-8">Gerenciamento (Modo Local)</p>
             
             <form onSubmit={handleLogin} className="space-y-4">
               <input 
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition"
                 placeholder="Usuário (admin)" 
                 value={username}
                 onChange={e => setUsername(e.target.value)}
               />
               <input 
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition"
                 type="password" 
                 placeholder="Senha" 
                 value={password}
@@ -358,16 +254,17 @@ export default function App() {
   // --- TELA PRINCIPAL ---
   return (
     <>
-      <GlobalStyle />
+            <GlobalStyle />
+
       <div className="min-h-screen w-full flex flex-col bg-gray-100 font-sans text-gray-800">
         {/* Header */}
-        <header className="bg-blue-900 text-white shadow-lg flex-shrink-0">
+        <header className="bg-pink-900 text-white shadow-lg flex-shrink-0">
           <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
               <Shield size={32} className="text-yellow-400" />
               <h1 className="text-2xl font-bold tracking-tight">FutManager</h1>
             </div>
-            <div className="flex items-center gap-6 bg-blue-800/50 px-4 py-2 rounded-full">
+            <div className="flex items-center gap-6 bg-pink-800/50 px-4 py-2 rounded-full">
               <span className="text-sm md:text-base">
                 Olá, <strong className="text-yellow-300">{user === 'admin' ? 'Administrador' : 'Visitante'}</strong>
               </span>
@@ -383,7 +280,7 @@ export default function App() {
 
         <main className="flex-grow max-w-7xl mx-auto p-4 md:p-8 w-full">
           
-          {/* Tabs Navigation */}
+          {/* Tabs Navigation (UPDATED TO PINK) */}
           <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-200 pb-1">
             {[
               { id: 'players', label: `Jogadores (${players.length})`, icon: Users },
@@ -396,8 +293,8 @@ export default function App() {
                 className={`
                   flex items-center gap-2 px-6 py-3 rounded-t-lg transition-all font-medium text-sm md:text-base
                   ${currentTab === tab.id 
-                    ? 'bg-white text-blue-900 border-t-2 border-blue-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]' 
-                    : 'text-gray-500 hover:text-blue-700 hover:bg-white/50'}
+                    ? 'bg-white text-pink-600 border-t-2 border-pink-600 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]' 
+                    : 'text-gray-500 hover:bg-pink-500 hover:text-white'}
                 `}
               >
                 <tab.icon size={18} /> {tab.label}
@@ -414,7 +311,7 @@ export default function App() {
                     <div className="flex-grow">
                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nome do Jogador</label>
                       <input 
-                        className="w-full px-4 py-2 rounded border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                        className="w-full px-4 py-2 rounded border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-pink-500 outline-none" 
                         placeholder="Ex: Ronaldinho Gaúcho"
                         value={newPlayerName}
                         onChange={e => setNewPlayerName(e.target.value)}
@@ -423,7 +320,7 @@ export default function App() {
                     <div className="w-full md:w-48">
                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Posição</label>
                       <select 
-                        className="w-full px-4 py-2 rounded border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-4 py-2 rounded border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-pink-500 outline-none"
                         value={newPlayerPos}
                         onChange={e => setNewPlayerPos(e.target.value)}
                       >
@@ -436,7 +333,7 @@ export default function App() {
                     <div className="w-full md:w-24">
                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nível</label>
                       <select 
-                        className="w-full px-4 py-2 rounded border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-4 py-2 rounded border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-pink-500 outline-none"
                         value={newPlayerLevel}
                         onChange={e => setNewPlayerLevel(e.target.value)}
                       >
@@ -449,7 +346,7 @@ export default function App() {
                     </div>
                     <div className="flex items-end">
                       <button 
-                        className="w-full md:w-auto bg-blue-900 hover:bg-blue-800 text-white font-bold px-6 py-2 rounded shadow transition flex items-center justify-center gap-2 h-[42px]"
+                        className="w-full md:w-auto bg-pink-900 hover:bg-pink-800 text-white font-bold px-6 py-2 rounded shadow transition flex items-center justify-center gap-2 h-[42px]"
                         onClick={() => {
                           addPlayer(newPlayerName, newPlayerPos, newPlayerLevel);
                           setNewPlayerName('');
@@ -476,7 +373,7 @@ export default function App() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {players.map(player => (
-                      <tr key={player.id} className="hover:bg-blue-50/30 transition duration-150">
+                      <tr key={player.id} className="hover:bg-pink-50/30 transition duration-150">
                         <td className="p-4 font-medium text-gray-900">{player.name}</td>
                         <td className="p-4 text-gray-600">{player.position}</td>
                         <td className="p-4 text-center">
@@ -541,10 +438,10 @@ export default function App() {
           {/* ABA SORTEIO */}
           {currentTab === 'draw' && (
             <div className="space-y-6">
-               <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-900 flex flex-col md:flex-row justify-between items-center gap-4">
+               <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-pink-900 flex flex-col md:flex-row justify-between items-center gap-4">
                  <div>
                    <h3 className="text-lg font-bold text-gray-900">
-                      Jogadores Confirmados: <span className="text-blue-600 text-2xl">{players.filter(p => p.confirmed).length}</span>
+                      Jogadores Confirmados: <span className="text-pink-600 text-2xl">{players.filter(p => p.confirmed).length}</span>
                    </h3>
                    <p className="text-gray-500 text-sm mt-1">
                      O algoritmo distribui equitativamente os níveis (A-E) entre os times.
@@ -564,9 +461,9 @@ export default function App() {
                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                    {teams.map((team, idx) => (
                      <div key={idx} className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col h-full">
-                       <div className="bg-blue-900 p-4 flex justify-between items-center">
+                       <div className="bg-pink-900 p-4 flex justify-between items-center">
                           <h3 className="text-white font-bold text-lg">Time {idx + 1}</h3>
-                          <span className="text-blue-200 text-xs font-mono bg-blue-800 px-2 py-1 rounded">
+                          <span className="text-pink-200 text-xs font-mono bg-pink-800 px-2 py-1 rounded">
                             {team.length} JOG
                           </span>
                        </div>
@@ -597,12 +494,12 @@ export default function App() {
             <div className="max-w-2xl mx-auto space-y-6">
               <div className="bg-white p-6 rounded-xl shadow-md">
                 <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Upload className="text-blue-600" size={24} /> Importar Jogadores
+                  <Upload className="text-pink-600" size={24} /> Importar Jogadores
                 </h3>
                 
-                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6">
-                  <h4 className="font-semibold text-blue-900 text-sm mb-2">Formato do Arquivo:</h4>
-                  <code className="block bg-white border border-blue-200 p-3 rounded text-xs text-gray-600 font-mono">
+                <div className="bg-pink-50 border border-pink-100 rounded-lg p-4 mb-6">
+                  <h4 className="font-semibold text-pink-900 text-sm mb-2">Formato do Arquivo:</h4>
+                  <code className="block bg-white border border-pink-200 p-3 rounded text-xs text-gray-600 font-mono">
                     Nome|Posição|Nível<br/>
                     João Silva|Ataque|A<br/>
                     Pedro Santos|Defesa|C
@@ -610,21 +507,21 @@ export default function App() {
                 </div>
                 
                 <div className="space-y-4">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition relative group">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-pink-50 transition relative group">
                     <input 
                       type="file" 
                       accept=".txt" 
                       onChange={handleFileUpload}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
-                    <Upload className="mx-auto text-gray-400 mb-2 group-hover:text-blue-500 transition" size={32} />
+                    <Upload className="mx-auto text-gray-400 mb-2 group-hover:text-pink-500 transition" size={32} />
                     <p className="text-sm font-medium text-gray-600">Clique para enviar o arquivo .txt</p>
                   </div>
 
                   <div className="relative">
                     <span className="absolute -top-3 left-3 bg-white px-2 text-xs font-bold text-gray-500">Ou cole o texto aqui</span>
                     <textarea 
-                      className="w-full h-64 p-4 rounded-lg border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm resize-vertical"
+                      className="w-full h-40 p-4 rounded-lg border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-pink-500 outline-none font-mono text-sm"
                       value={importText}
                       onChange={e => setImportText(e.target.value)}
                       placeholder="Cole os dados aqui..."
@@ -632,7 +529,7 @@ export default function App() {
                   </div>
                   
                   <button 
-                    className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2" 
+                    className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2" 
                     onClick={handleBulkImport}
                   >
                     Processar Importação
