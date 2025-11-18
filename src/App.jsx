@@ -46,6 +46,9 @@ const getConfirmedBadgeClass = (isConfirmed) => {
     : 'bg-red-100 text-red-600 border border-red-200';
 };
 
+// --- CONSTANTES DE TIMES ---
+const TEAM_NAMES = ['Branco', 'Preto', 'Azul', 'Laranja'];
+
 // --- COMPONENTE PRINCIPAL ---
 export default function App() {
   const [user, setUser] = useState(null); 
@@ -132,7 +135,7 @@ export default function App() {
               position,
               level,
               paid: false,
-              confirmed: false,
+              confirmed: true,
               createdAt: new Date()
             });
             validCount++;
@@ -196,6 +199,8 @@ export default function App() {
         id: 1,
         teamA: teams[0],
         teamB: teams[1],
+        teamAIndex: 0,
+        teamBIndex: 1,
         scoreA: 0,
         scoreB: 0,
         finished: false,
@@ -205,6 +210,8 @@ export default function App() {
         id: 2,
         teamA: teams[2],
         teamB: teams[3],
+        teamAIndex: 2,
+        teamBIndex: 3,
         scoreA: 0,
         scoreB: 0,
         finished: false,
@@ -215,6 +222,8 @@ export default function App() {
         id: 3,
         teamA: teams[0],
         teamB: teams[2],
+        teamAIndex: 0,
+        teamBIndex: 2,
         scoreA: 0,
         scoreB: 0,
         finished: false,
@@ -224,6 +233,8 @@ export default function App() {
         id: 4,
         teamA: teams[1],
         teamB: teams[3],
+        teamAIndex: 1,
+        teamBIndex: 3,
         scoreA: 0,
         scoreB: 0,
         finished: false,
@@ -234,6 +245,8 @@ export default function App() {
         id: 5,
         teamA: teams[0],
         teamB: teams[3],
+        teamAIndex: 0,
+        teamBIndex: 3,
         scoreA: 0,
         scoreB: 0,
         finished: false,
@@ -243,6 +256,8 @@ export default function App() {
         id: 6,
         teamA: teams[1],
         teamB: teams[2],
+        teamAIndex: 1,
+        teamBIndex: 2,
         scoreA: 0,
         scoreB: 0,
         finished: false,
@@ -253,6 +268,8 @@ export default function App() {
         id: 7,
         teamA: teams[1],
         teamB: teams[0],
+        teamAIndex: 1,
+        teamBIndex: 0,
         scoreA: 0,
         scoreB: 0,
         finished: false,
@@ -262,6 +279,8 @@ export default function App() {
         id: 8,
         teamA: teams[3],
         teamB: teams[2],
+        teamAIndex: 3,
+        teamBIndex: 2,
         scoreA: 0,
         scoreB: 0,
         finished: false,
@@ -272,6 +291,8 @@ export default function App() {
         id: 9,
         teamA: teams[2],
         teamB: teams[0],
+        teamAIndex: 2,
+        teamBIndex: 0,
         scoreA: 0,
         scoreB: 0,
         finished: false,
@@ -281,6 +302,8 @@ export default function App() {
         id: 10,
         teamA: teams[3],
         teamB: teams[1],
+        teamAIndex: 3,
+        teamBIndex: 1,
         scoreA: 0,
         scoreB: 0,
         finished: false,
@@ -291,6 +314,8 @@ export default function App() {
         id: 11,
         teamA: teams[3],
         teamB: teams[0],
+        teamAIndex: 3,
+        teamBIndex: 0,
         scoreA: 0,
         scoreB: 0,
         finished: false,
@@ -300,6 +325,8 @@ export default function App() {
         id: 12,
         teamA: teams[2],
         teamB: teams[1],
+        teamAIndex: 2,
+        teamBIndex: 1,
         scoreA: 0,
         scoreB: 0,
         finished: false,
@@ -612,7 +639,7 @@ export default function App() {
                    {teams.map((team, idx) => (
                      <div key={idx} className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col h-full">
                        <div className="bg-pink-900 p-4 flex justify-between items-center">
-                          <h3 className="text-white font-bold text-lg">Time {idx + 1}</h3>
+                          <h3 className="text-white font-bold text-lg">{TEAM_NAMES[idx]}</h3>
                           <span className="text-pink-200 text-xs font-mono bg-pink-800 px-2 py-1 rounded">
                             {team.length} JOG
                           </span>
@@ -697,7 +724,7 @@ export default function App() {
 
                               {/* Time A */}
                               <div className="mb-3 pb-3 border-b border-gray-300">
-                                <div className="text-xs text-gray-500 font-semibold mb-1">Time A</div>
+                                <div className="text-xs text-gray-500 font-semibold mb-1">{TEAM_NAMES[match.teamAIndex]}</div>
                                 <div className="flex flex-wrap gap-1 mb-2">
                                   {match.teamA.map(p => (
                                     <span key={p.id} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
@@ -727,7 +754,7 @@ export default function App() {
 
                               {/* Time B */}
                               <div className="pt-3">
-                                <div className="text-xs text-gray-500 font-semibold mb-1">Time B</div>
+                                <div className="text-xs text-gray-500 font-semibold mb-1">{TEAM_NAMES[match.teamBIndex]}</div>
                                 <div className="flex flex-wrap gap-1 mb-2">
                                   {match.teamB.map(p => (
                                     <span key={p.id} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
