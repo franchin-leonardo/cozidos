@@ -126,7 +126,14 @@ export default function App() {
 
   // --- FUNÇÕES FIRESTORE ---
   const addPlayer = async (name, position, level) => {
-    if (!name || !firebaseUser) return;
+    if (!name) {
+      console.error('Nome vazio');
+      throw new Error('Nome é obrigatório');
+    }
+    if (!firebaseUser) {
+      console.error('Usuário não autenticado');
+      throw new Error('Usuário não autenticado');
+    }
     try {
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'soccer_players'), {
         name,
@@ -136,9 +143,10 @@ export default function App() {
         confirmed: false,
         createdAt: serverTimestamp()
       });
+      console.log('Jogador adicionado ao Firebase:', name);
     } catch (e) {
-      console.error(e);
-      alert("Erro ao adicionar jogador.");
+      console.error('Erro ao adicionar jogador no Firebase:', e);
+      throw e;
     }
   };
 
@@ -160,31 +168,86 @@ export default function App() {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
-      setImportText(event.target.result);
+    reader.onerror = () => {
+      console.error('Erro ao ler arquivo:', reader.error);
+      alert('Erro ao ler o arquivo');
     };
-    reader.readAsText(file);
+    reader.onload = (event) => {
+      const content = event.target.result;
+      console.log('Arquivo carregado:', content);
+      console.log('Comprimento:', content.length);
+      setImportText(content);
+    };
+    reader.readAsText(file, 'UTF-8');
   };
 
   const handleBulkImport = async () => {
     if (!importText) return;
-    const lines = importText.split(/\r?\n/);
+    
+    // Normalizar quebras de linha e dividir
+    const normalizedText = importText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const lines = normalizedText.split('\n').filter(line => line.trim().length > 0);
+    
+    console.log('Número de linhas:', lines.length);
+    console.log('Todas as linhas:', lines);
+    
     let count = 0;
+    let errors = [];
+    const importedPlayers = [];
+    
     for (const line of lines) {
       const cleanLine = line.trim();
-      if (!cleanLine) continue; 
-      const parts = cleanLine.split('|');
+      console.log('Processando linha:', `"${cleanLine}"`);
+      
+      if (!cleanLine) {
+        console.log('Linha vazia, pulando');
+        continue;
+      }
+      
+      const parts = cleanLine.split('|').map(p => p.trim());
+      console.log('Partes da linha:', parts, 'Comprimento:', parts.length);
+      
       if (parts.length >= 3) {
-        const name = parts[0].trim();
-        const position = parts[1].trim();
-        const level = parts[2].trim().toUpperCase();
-        if (name) {
-            await addPlayer(name, position, level);
+        const name = parts[0];
+        const position = parts[1];
+        const level = parts[2].toUpperCase();
+        
+        console.log('Adicionando - Nome:', name, 'Posição:', position, 'Nível:', level);
+        
+        if (name && name.length > 0) {
+          try {
+            // Criar jogador no state sem adicionar ao Firebase
+            importedPlayers.push({
+              id: `temp-${Date.now()}-${count}`,
+              name,
+              position,
+              level,
+              paid: false,
+              confirmed: false,
+              createdAt: new Date()
+            });
             count++;
+            console.log('Jogador adicionado ao state com sucesso');
+          } catch (e) {
+            console.error('Erro ao processar jogador:', e);
+            errors.push(`${name}: ${e.message}`);
+          }
         }
+      } else {
+        console.log('Linha não tem 3 partes (|), pulando');
       }
     }
-    alert(`${count} jogadores importados!`);
+    
+    // Adicionar os jogadores importados ao state
+    if (importedPlayers.length > 0) {
+      setPlayers([...players, ...importedPlayers]);
+    }
+    
+    let message = `${count} jogadores importados!`;
+    if (errors.length > 0) {
+      message += `\n\nErros (${errors.length}):\n${errors.join('\n')}`;
+    }
+    alert(message);
     setImportText('');
     setCurrentTab('players');
   };
@@ -561,7 +624,7 @@ export default function App() {
                   <div className="relative">
                     <span className="absolute -top-3 left-3 bg-white px-2 text-xs font-bold text-gray-500">Ou cole o texto aqui</span>
                     <textarea 
-                      className="w-full h-40 p-4 rounded-lg border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
+                      className="w-full h-64 p-4 rounded-lg border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm resize-vertical"
                       value={importText}
                       onChange={e => setImportText(e.target.value)}
                       placeholder="Cole os dados aqui..."
