@@ -238,6 +238,21 @@ export default function App() {
     setTeams(newTeams);
   };
 
+  // Função para criar match com estrutura de gols e assistências
+  const createMatch = (id, teamA, teamAIndex, teamB, teamBIndex, round) => ({
+    id,
+    teamA,
+    teamB,
+    teamAIndex,
+    teamBIndex,
+    scoreA: 0,
+    scoreB: 0,
+    goalsA: [], // [{player: '', assistBy: ''}, ...]
+    goalsB: [],
+    finished: false,
+    round
+  });
+
   const generateMatches = () => {
     if (teams.length !== 4) {
       alert("Antes sorteie os times!");
@@ -246,143 +261,23 @@ export default function App() {
 
     const newMatches = [
       // Rodada 1: A vs B, C vs D
-      {
-        id: 1,
-        teamA: teams[0],
-        teamB: teams[1],
-        teamAIndex: 0,
-        teamBIndex: 1,
-        scoreA: 0,
-        scoreB: 0,
-        finished: false,
-        round: 1
-      },
-      {
-        id: 2,
-        teamA: teams[2],
-        teamB: teams[3],
-        teamAIndex: 2,
-        teamBIndex: 3,
-        scoreA: 0,
-        scoreB: 0,
-        finished: false,
-        round: 1
-      },
+      createMatch(1, teams[0], 0, teams[1], 1, 1),
+      createMatch(2, teams[2], 2, teams[3], 3, 1),
       // Rodada 2: A vs C, B vs D
-      {
-        id: 3,
-        teamA: teams[0],
-        teamB: teams[2],
-        teamAIndex: 0,
-        teamBIndex: 2,
-        scoreA: 0,
-        scoreB: 0,
-        finished: false,
-        round: 2
-      },
-      {
-        id: 4,
-        teamA: teams[1],
-        teamB: teams[3],
-        teamAIndex: 1,
-        teamBIndex: 3,
-        scoreA: 0,
-        scoreB: 0,
-        finished: false,
-        round: 2
-      },
+      createMatch(3, teams[0], 0, teams[2], 2, 2),
+      createMatch(4, teams[1], 1, teams[3], 3, 2),
       // Rodada 3: A vs D, B vs C
-      {
-        id: 5,
-        teamA: teams[0],
-        teamB: teams[3],
-        teamAIndex: 0,
-        teamBIndex: 3,
-        scoreA: 0,
-        scoreB: 0,
-        finished: false,
-        round: 3
-      },
-      {
-        id: 6,
-        teamA: teams[1],
-        teamB: teams[2],
-        teamAIndex: 1,
-        teamBIndex: 2,
-        scoreA: 0,
-        scoreB: 0,
-        finished: false,
-        round: 3
-      },
-      // Rodada 4: B vs A, D vs C (reverso)
-      {
-        id: 7,
-        teamA: teams[1],
-        teamB: teams[0],
-        teamAIndex: 1,
-        teamBIndex: 0,
-        scoreA: 0,
-        scoreB: 0,
-        finished: false,
-        round: 4
-      },
-      {
-        id: 8,
-        teamA: teams[3],
-        teamB: teams[2],
-        teamAIndex: 3,
-        teamBIndex: 2,
-        scoreA: 0,
-        scoreB: 0,
-        finished: false,
-        round: 4
-      },
+      createMatch(5, teams[0], 0, teams[3], 3, 3),
+      createMatch(6, teams[1], 1, teams[2], 2, 3),
+      // Rodada 4: B vs A, D vs C (reversos)
+      createMatch(7, teams[1], 1, teams[0], 0, 4),
+      createMatch(8, teams[3], 3, teams[2], 2, 4),
       // Rodada 5: C vs A, D vs B (reverso)
-      {
-        id: 9,
-        teamA: teams[2],
-        teamB: teams[0],
-        teamAIndex: 2,
-        teamBIndex: 0,
-        scoreA: 0,
-        scoreB: 0,
-        finished: false,
-        round: 5
-      },
-      {
-        id: 10,
-        teamA: teams[3],
-        teamB: teams[1],
-        teamAIndex: 3,
-        teamBIndex: 1,
-        scoreA: 0,
-        scoreB: 0,
-        finished: false,
-        round: 5
-      },
+      createMatch(9, teams[2], 2, teams[0], 0, 5),
+      createMatch(10, teams[3], 3, teams[1], 1, 5),
       // Rodada 6: D vs A, C vs B (reverso)
-      {
-        id: 11,
-        teamA: teams[3],
-        teamB: teams[0],
-        teamAIndex: 3,
-        teamBIndex: 0,
-        scoreA: 0,
-        scoreB: 0,
-        finished: false,
-        round: 6
-      },
-      {
-        id: 12,
-        teamA: teams[2],
-        teamB: teams[1],
-        teamAIndex: 2,
-        teamBIndex: 1,
-        scoreA: 0,
-        scoreB: 0,
-        finished: false,
-        round: 6
-      }
+      createMatch(11, teams[3], 3, teams[0], 0, 6),
+      createMatch(12, teams[2], 2, teams[1], 1, 6)
     ];
 
     setMatches(newMatches);
@@ -469,6 +364,35 @@ export default function App() {
     setMatches(prev => prev.map(match => 
       match.id === matchId 
         ? { ...match, finished: !match.finished }
+        : match
+    ));
+  };
+
+  const addGoal = (matchId, teamSide, playerName, assistBy = '') => {
+    if (user !== 'admin') return;
+    setMatches(prev => prev.map(match => 
+      match.id === matchId 
+        ? { 
+            ...match, 
+            [teamSide === 'A' ? 'goalsA' : 'goalsB']: [
+              ...(teamSide === 'A' ? match.goalsA : match.goalsB),
+              { player: playerName, assistBy }
+            ],
+            [teamSide === 'A' ? 'scoreA' : 'scoreB']: (teamSide === 'A' ? match.scoreA : match.scoreB) + 1
+          }
+        : match
+    ));
+  };
+
+  const removeGoal = (matchId, teamSide, goalIndex) => {
+    if (user !== 'admin') return;
+    setMatches(prev => prev.map(match => 
+      match.id === matchId 
+        ? { 
+            ...match, 
+            [teamSide === 'A' ? 'goalsA' : 'goalsB']: (teamSide === 'A' ? match.goalsA : match.goalsB).filter((_, idx) => idx !== goalIndex),
+            [teamSide === 'A' ? 'scoreA' : 'scoreB']: Math.max(0, (teamSide === 'A' ? match.scoreA : match.scoreB) - 1)
+          }
         : match
     ));
   };
@@ -871,7 +795,7 @@ export default function App() {
               </div>
 
               {matches.length > 0 && (
-                <div className="space-y-8">
+                <div className="space-y-4">
                   {[1, 2, 3, 4, 5, 6].map((round) => {
                     const roundMatches = matches.filter(m => m.round === round);
                     const finishedCount = roundMatches.filter(m => m.finished).length;
@@ -883,80 +807,207 @@ export default function App() {
                             {finishedCount}/{roundMatches.length} finalizados
                           </span>
                         </div>
-                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3 p-4">
                           {roundMatches.map((match) => (
-                            <div key={match.id} className={`rounded-lg p-4 border-2 ${match.finished ? 'border-green-300 bg-green-50' : 'border-pink-200 bg-white'}`}>
-                              <div className="flex justify-between items-center mb-3">
-                                <h4 className="font-bold text-gray-800">Jogo {match.id}</h4>
+                            <div key={match.id} className={`rounded-lg p-4 border-2 transition ${match.finished ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white hover:border-pink-300'}`}>
+                              
+                              {/* Header com status */}
+                              <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
+                                <h4 className="font-bold text-gray-800 text-sm">Jogo {match.id}</h4>
                                 {user === 'admin' && (
                                   <button 
                                     onClick={() => toggleMatchFinished(match.id)}
-                                    className={`text-xs font-bold px-2 py-1 rounded transition ${
+                                    className={`text-xs font-bold px-3 py-1 rounded transition ${
                                       match.finished 
                                         ? 'bg-green-200 text-green-800' 
-                                        : 'bg-yellow-200 text-yellow-800'
+                                        : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                                     }`}
                                   >
-                                    {match.finished ? '✓' : 'Em Jogo'}
+                                    {match.finished ? '✓ Finalizado' : '⏱ Em Jogo'}
                                   </button>
                                 )}
                               </div>
 
-                              {/* Time A */}
-                              <div className="mb-3 pb-3 border-b border-gray-300">
-                                <div className="text-xs text-gray-500 font-semibold mb-1">{TEAM_NAMES[match.teamAIndex]}</div>
-                                <div className="flex flex-wrap gap-1 mb-2">
-                                  {match.teamA.map(p => (
-                                    <span key={p.id} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
-                                      {p.name}
-                                    </span>
-                                  ))}
-                                </div>
-                                {user === 'admin' && (
-                                  <div className="flex items-center gap-2">
-                                    <input 
-                                      type="number" 
-                                      min="0" 
-                                      value={match.scoreA} 
-                                      onChange={(e) => updateMatchScore(match.id, 'A', parseInt(e.target.value) || 0)}
-                                      className="w-12 px-2 py-1 border border-gray-300 rounded text-center font-bold text-lg"
-                                    />
-                                    <span className="text-gray-600 text-sm">gols</span>
+                              {/* Layout: Time A | Placar | Time B */}
+                              <div className="flex items-center gap-3 md:gap-4">
+                                
+                                {/* TIME A */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-bold text-pink-900 mb-1 truncate">{TEAM_NAMES[match.teamAIndex]}</div>
+                                  <div className="space-y-1">
+                                    {match.teamA.map(p => (
+                                      <div key={p.id} className="text-xs bg-pink-50 px-2 py-1 rounded truncate border border-pink-100">
+                                        {p.name}
+                                      </div>
+                                    ))}
                                   </div>
-                                )}
-                                {user !== 'admin' && (
-                                  <div className="text-2xl font-bold text-pink-600">{match.scoreA}</div>
-                                )}
-                              </div>
-
-                              {/* Score vs */}
-                              <div className="text-center py-1 font-bold text-gray-400 text-sm">VS</div>
-
-                              {/* Time B */}
-                              <div className="pt-3">
-                                <div className="text-xs text-gray-500 font-semibold mb-1">{TEAM_NAMES[match.teamBIndex]}</div>
-                                <div className="flex flex-wrap gap-1 mb-2">
-                                  {match.teamB.map(p => (
-                                    <span key={p.id} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
-                                      {p.name}
-                                    </span>
-                                  ))}
                                 </div>
-                                {user === 'admin' && (
-                                  <div className="flex items-center gap-2">
-                                    <input 
-                                      type="number" 
-                                      min="0" 
-                                      value={match.scoreB} 
-                                      onChange={(e) => updateMatchScore(match.id, 'B', parseInt(e.target.value) || 0)}
-                                      className="w-12 px-2 py-1 border border-gray-300 rounded text-center font-bold text-lg"
-                                    />
-                                    <span className="text-gray-600 text-sm">gols</span>
+
+                                {/* PLACAR E GOLS */}
+                                <div className="flex flex-col items-center gap-2">
+                                  
+                                  {/* Placar */}
+                                  <div className="bg-linear-to-r from-pink-100 to-pink-50 rounded-lg p-3 border border-pink-200 text-center min-w-20">
+                                    {user === 'admin' ? (
+                                      <div className="flex gap-2 items-center justify-center">
+                                        <input 
+                                          type="number" 
+                                          min="0" 
+                                          value={match.scoreA} 
+                                          onChange={(e) => updateMatchScore(match.id, 'A', parseInt(e.target.value) || 0)}
+                                          className="w-10 px-1 py-1 border border-pink-300 rounded text-center font-bold text-lg bg-white"
+                                        />
+                                        <span className="font-bold text-gray-600">X</span>
+                                        <input 
+                                          type="number" 
+                                          min="0" 
+                                          value={match.scoreB} 
+                                          onChange={(e) => updateMatchScore(match.id, 'B', parseInt(e.target.value) || 0)}
+                                          className="w-10 px-1 py-1 border border-pink-300 rounded text-center font-bold text-lg bg-white"
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="text-2xl font-bold text-pink-900">
+                                        {match.scoreA} <span className="text-gray-600">X</span> {match.scoreB}
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                                {user !== 'admin' && (
-                                  <div className="text-2xl font-bold text-pink-600">{match.scoreB}</div>
-                                )}
+
+                                  {/* Gols (Admin) */}
+                                  {user === 'admin' && (
+                                    <div className="w-full max-w-xs space-y-1">
+                                      {/* Gols Time A */}
+                                      {match.goalsA.map((goal, idx) => (
+                                        <div key={`goalA-${idx}`} className="bg-pink-50 border border-pink-200 rounded px-2 py-1 text-xs flex justify-between items-center">
+                                          <span className="truncate">
+                                            <span className="font-bold text-pink-900">⚽</span> {goal.player}
+                                            {goal.assistBy && <span className="text-gray-600 ml-1">({goal.assistBy})</span>}
+                                          </span>
+                                          <button 
+                                            onClick={() => removeGoal(match.id, 'A', idx)}
+                                            className="text-red-500 hover:text-red-700 ml-1 shrink-0"
+                                            title="Remover gol"
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      ))}
+
+                                      {/* Form para adicionar gol Time A */}
+                                      {!match.finished && (
+                                        <div className="bg-pink-50 border border-dashed border-pink-300 rounded p-1.5">
+                                          <select 
+                                            id={`playerA-${match.id}`}
+                                            className="w-full text-xs px-1 py-0.5 rounded border border-pink-200 bg-white mb-0.5"
+                                            defaultValue=""
+                                          >
+                                            <option value="">Selecionar jogador...</option>
+                                            {match.teamA.map(p => (
+                                              <option key={p.id} value={p.name}>{p.name}</option>
+                                            ))}
+                                          </select>
+                                          <select 
+                                            id={`assistA-${match.id}`}
+                                            className="w-full text-xs px-1 py-0.5 rounded border border-pink-200 bg-white mb-0.5"
+                                            defaultValue=""
+                                          >
+                                            <option value="">Assistência (opcional)</option>
+                                            {match.teamA.map(p => (
+                                              <option key={p.id} value={p.name}>{p.name}</option>
+                                            ))}
+                                          </select>
+                                          <button 
+                                            onClick={() => {
+                                              const player = document.getElementById(`playerA-${match.id}`).value;
+                                              const assist = document.getElementById(`assistA-${match.id}`).value;
+                                              if (player) {
+                                                addGoal(match.id, 'A', player, assist);
+                                                document.getElementById(`playerA-${match.id}`).value = '';
+                                                document.getElementById(`assistA-${match.id}`).value = '';
+                                              }
+                                            }}
+                                            className="w-full text-xs bg-pink-200 hover:bg-pink-300 text-white font-bold px-1 py-0.5 rounded transition"
+                                          >
+                                            Adicionar Gol
+                                          </button>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Separador */}
+                                      <div className="border-t border-gray-300 my-1"></div>
+                                      
+                                      {/* Gols Time B */}
+                                      {match.goalsB.map((goal, idx) => (
+                                        <div key={`goalB-${idx}`} className="bg-blue-50 border border-blue-200 rounded px-2 py-1 text-xs flex justify-between items-center">
+                                          <span className="truncate">
+                                            <span className="font-bold text-blue-900">⚽</span> {goal.player}
+                                            {goal.assistBy && <span className="text-gray-600 ml-1">({goal.assistBy})</span>}
+                                          </span>
+                                          <button 
+                                            onClick={() => removeGoal(match.id, 'B', idx)}
+                                            className="text-red-500 hover:text-red-700 ml-1 shrink-0"
+                                            title="Remover gol"
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      ))}
+
+                                      {/* Form para adicionar gol Time B */}
+                                      {!match.finished && (
+                                        <div className="bg-blue-50 border border-dashed border-blue-300 rounded p-1.5">
+                                          <select 
+                                            id={`playerB-${match.id}`}
+                                            className="w-full text-xs px-1 py-0.5 rounded border border-blue-200 bg-white mb-0.5"
+                                            defaultValue=""
+                                          >
+                                            <option value="">Selecionar jogador...</option>
+                                            {match.teamB.map(p => (
+                                              <option key={p.id} value={p.name}>{p.name}</option>
+                                            ))}
+                                          </select>
+                                          <select 
+                                            id={`assistB-${match.id}`}
+                                            className="w-full text-xs px-1 py-0.5 rounded border border-blue-200 bg-white mb-0.5"
+                                            defaultValue=""
+                                          >
+                                            <option value="">Assistência (opcional)</option>
+                                            {match.teamB.map(p => (
+                                              <option key={p.id} value={p.name}>{p.name}</option>
+                                            ))}
+                                          </select>
+                                          <button 
+                                            onClick={() => {
+                                              const player = document.getElementById(`playerB-${match.id}`).value;
+                                              const assist = document.getElementById(`assistB-${match.id}`).value;
+                                              if (player) {
+                                                addGoal(match.id, 'B', player, assist);
+                                                document.getElementById(`playerB-${match.id}`).value = '';
+                                                document.getElementById(`assistB-${match.id}`).value = '';
+                                              }
+                                            }}
+                                            className="w-full text-xs bg-blue-200 hover:bg-blue-300 text-white font-bold px-1 py-0.5 rounded transition"
+                                          >
+                                            Adicionar Gol
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* TIME B */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-bold text-blue-900 mb-1 truncate text-right">{TEAM_NAMES[match.teamBIndex]}</div>
+                                  <div className="space-y-1">
+                                    {match.teamB.map(p => (
+                                      <div key={p.id} className="text-xs bg-blue-50 px-2 py-1 rounded truncate border border-blue-100 text-right">
+                                        {p.name}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
                               </div>
                             </div>
                           ))}
