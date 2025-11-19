@@ -61,6 +61,8 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState('players');
   const [teams, setTeams] = useState([]);
   const [matches, setMatches] = useState([]);
+  const [teamsLocked, setTeamsLocked] = useState(false);
+  const [draggedPlayer, setDraggedPlayer] = useState(null);
   
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerPos, setNewPlayerPos] = useState('Meio');
@@ -386,6 +388,73 @@ export default function App() {
     setMatches(newMatches);
   };
 
+  // --- DRAG AND DROP DE JOGADORES ENTRE TIMES ---
+  const handleDragStart = (e, player, fromTeamIdx) => {
+    if (teamsLocked) {
+      e.preventDefault();
+      return;
+    }
+    setDraggedPlayer({ player, fromTeamIdx });
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    if (teamsLocked) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, toTeamIdx) => {
+    if (teamsLocked) {
+      e.preventDefault();
+      return;
+    }
+    e.preventDefault();
+    
+    if (!draggedPlayer) return;
+    
+    const { player, fromTeamIdx } = draggedPlayer;
+    
+    // Se for o mesmo time, não faz nada
+    if (fromTeamIdx === toTeamIdx) {
+      setDraggedPlayer(null);
+      return;
+    }
+    
+    // Atualiza os times
+    const newTeams = teams.map((team, idx) => {
+      if (idx === fromTeamIdx) {
+        return team.filter(p => p.id !== player.id);
+      }
+      if (idx === toTeamIdx) {
+        return [...team, player];
+      }
+      return team;
+    });
+    
+    // Ordena cada time por nível (A-E)
+    const levelOrder = { A: 1, B: 2, C: 3, D: 4, E: 5 };
+    const sortedTeams = newTeams.map(team => 
+      [...team].sort((a, b) => {
+        const levelDiff = (levelOrder[a.level] || 6) - (levelOrder[b.level] || 6);
+        if (levelDiff !== 0) return levelDiff;
+        // Se mesmo nível, ordena por nome
+        return a.name.localeCompare(b.name);
+      })
+    );
+    
+    setTeams(sortedTeams);
+    setDraggedPlayer(null);
+  };
+
+  const toggleTeamsLock = () => {
+    if (teams.length === 0) {
+      alert('Sorteie os times primeiro!');
+      return;
+    }
+    setTeamsLocked(!teamsLocked);
+  };
+
   const updateMatchScore = (matchId, teamSide, value) => {
     if (user !== 'admin') return;
     setMatches(prev => prev.map(match => 
@@ -670,33 +739,67 @@ export default function App() {
                       Jogadores Confirmados: <span className="text-pink-600 text-2xl">{players.filter(p => p.confirmed).length}</span>
                    </h3>
                    <p className="text-gray-500 text-sm mt-1">
-                     O algoritmo distribui equitativamente os níveis (A-E) entre os times.
+                     {teamsLocked 
+                       ? '🔒 Times fechados - Arraste desabilitado' 
+                       : '📌 Arraste jogadores entre times para reorganizar'}
                    </p>
                  </div>
                  {user === 'admin' && (
-                   <button 
-                    className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-lg shadow-lg transition flex items-center gap-2" 
-                    onClick={generateTeams}
-                   >
-                     <RefreshCw size={20} /> Sortear Equipes
-                   </button>
+                   <div className="flex gap-3">
+                     {teams.length > 0 && (
+                       <button 
+                        className={`font-bold px-6 py-3 rounded-lg shadow-lg transition flex items-center gap-2 ${
+                          teamsLocked 
+                            ? 'bg-red-600 hover:bg-red-700 text-white' 
+                            : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                        }`}
+                        onClick={toggleTeamsLock}
+                       >
+                         {teamsLocked ? '🔓 Desbloquear Times' : '🔒 Bloquear Times'}
+                       </button>
+                     )}
+                     <button 
+                      className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-lg shadow-lg transition flex items-center gap-2" 
+                      onClick={generateTeams}
+                     >
+                       <RefreshCw size={20} /> Sortear Equipes
+                     </button>
+                   </div>
                  )}
                </div>
 
                {teams.length > 0 && (
                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                    {teams.map((team, idx) => (
-                     <div key={idx} className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col h-full">
-                       <div className="bg-pink-900 p-4 flex justify-between items-center">
+                     <div 
+                       key={idx} 
+                       className={`bg-white rounded-xl shadow-md overflow-hidden flex flex-col h-full transition ${
+                         teamsLocked ? 'opacity-75' : ''
+                       }`}
+                       onDragOver={handleDragOver}
+                       onDrop={(e) => handleDrop(e, idx)}
+                     >
+                       <div className={`${teamsLocked ? 'bg-gray-600' : 'bg-pink-900'} p-4 flex justify-between items-center`}>
                           <h3 className="text-white font-bold text-lg">{TEAM_NAMES[idx]}</h3>
-                          <span className="text-pink-200 text-xs font-mono bg-pink-800 px-2 py-1 rounded">
-                            {team.length} JOG
+                          <span className={`text-xs font-mono px-2 py-1 rounded ${
+                            teamsLocked ? 'bg-gray-700 text-gray-200' : 'bg-pink-800 text-pink-200'
+                          }`}>
+                            {team.length} JOG {teamsLocked ? '🔒' : ''}
                           </span>
                        </div>
                        <div className="p-4 grow">
                          <ul className="space-y-2">
                            {team.map(p => (
-                             <li key={p.id} className="flex justify-between items-center p-2 hover:bg-gray-50 rounded border-b border-gray-100 last:border-0">
+                             <li 
+                               key={p.id}
+                               draggable={!teamsLocked}
+                               onDragStart={(e) => handleDragStart(e, p, idx)}
+                               className={`flex justify-between items-center p-2 rounded border-b border-gray-100 last:border-0 transition ${
+                                 teamsLocked 
+                                   ? 'cursor-not-allowed' 
+                                   : 'cursor-move hover:bg-gray-50 hover:shadow-sm'
+                               }`}
+                             >
                                <div className="flex flex-col">
                                  <span className="font-semibold text-gray-800 text-sm">{p.name}</span>
                                  <span className="text-xs text-gray-500">{p.position}</span>
@@ -710,6 +813,34 @@ export default function App() {
                        </div>
                      </div>
                    ))}
+                 </div>
+               )}
+
+               {teams.length > 0 && !teamsLocked && user === 'admin' && (
+                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 flex items-center justify-between">
+                   <p className="text-blue-700 text-sm">
+                     ✅ Times definidos! Clique em <strong>Bloquear Times</strong> quando terminar a reorganização, então clique em <strong>Gerar Jogos</strong>.
+                   </p>
+                   <button 
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg transition" 
+                    onClick={generateMatches}
+                   >
+                     Gerar Jogos →
+                   </button>
+                 </div>
+               )}
+
+               {teams.length > 0 && teamsLocked && user === 'admin' && (
+                 <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                   <p className="text-green-700 text-sm">
+                     ✅ Times bloqueados! Clique em <strong>Gerar Jogos</strong> para criar o calendário.
+                   </p>
+                   <button 
+                    className="mt-3 bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2 rounded-lg transition flex items-center gap-2" 
+                    onClick={generateMatches}
+                   >
+                     <Play size={18} /> Gerar Jogos
+                   </button>
                  </div>
                )}
             </div>
