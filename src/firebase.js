@@ -84,3 +84,27 @@ export const loadPlayersFromFirebase = async () => {
     return [];
   }
 };
+
+export const updatePlayerStatus = async (playerId, field, value) => {
+  try {
+    const { update } = await import('firebase/database');
+    const playerRef = ref(db, `players/${playerId}`);
+    await update(playerRef, { [field]: value });
+    console.log(`Jogador ${playerId} atualizado: ${field} = ${value}`);
+  } catch (error) {
+    console.error('Erro ao atualizar jogador:', error);
+    throw error;
+  }
+};
+
+export const deletePlayerFromFirebase = async (playerId) => {
+  try {
+    const { remove } = await import('firebase/database');
+    const playerRef = ref(db, `players/${playerId}`);
+    await remove(playerRef);
+    console.log(`Jogador ${playerId} deletado`);
+  } catch (error) {
+    console.error('Erro ao deletar jogador:', error);
+    throw error;
+  }
+};

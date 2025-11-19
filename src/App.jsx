@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/static-components */
 import { useState, useEffect } from 'react';
 import shieldSvg from './assets/shield.svg';
-import { addMultiplePlayersToFirebase, loadPlayersFromFirebase } from './firebase';
+import { addMultiplePlayersToFirebase, loadPlayersFromFirebase, updatePlayerStatus, deletePlayerFromFirebase } from './firebase';
 
 
 const LogOut = ({ size = 24, className = "", ...props }) => (
@@ -104,17 +104,39 @@ export default function App() {
     });
   };
 
-  const updatePlayerStatus = (id, field, currentValue) => {
+  const updatePlayerStatusLocal = (id, field, currentValue) => {
     if (user !== 'admin') return;
+    const newValue = !currentValue;
+    
     setPlayers(prev => prev.map(p => 
-      p.id === id ? { ...p, [field]: !currentValue } : p
+      p.id === id ? { ...p, [field]: newValue } : p
     ));
+    
+    // Salvar no Firebase
+    updatePlayerStatus(id, field, newValue).catch(error => {
+      console.error('Erro ao salvar status:', error);
+      // Reverter em caso de erro
+      setPlayers(prev => prev.map(p => 
+        p.id === id ? { ...p, [field]: currentValue } : p
+      ));
+    });
   };
 
-  const deletePlayer = (id) => {
+  const deletePlayerLocal = (id) => {
     if (user !== 'admin') return;
     if (window.confirm('Tem certeza que deseja remover este jogador?')) {
       setPlayers(prev => prev.filter(p => p.id !== id));
+      
+      // Deletar do Firebase
+      deletePlayerFromFirebase(id).catch(error => {
+        console.error('Erro ao deletar jogador:', error);
+        // Se falhar, recarregar lista
+        loadPlayersFromFirebase().then(fbPlayers => {
+          if (fbPlayers && fbPlayers.length > 0) {
+            setPlayers(fbPlayers.sort((a, b) => a.name.localeCompare(b.name)));
+          }
+        });
+      });
     }
   };
 
@@ -587,7 +609,7 @@ export default function App() {
                         </td>
                         <td className="p-4">
                           <div 
-                            onClick={() => updatePlayerStatus(player.id, 'paid', player.paid)}
+                            onClick={() => updatePlayerStatusLocal(player.id, 'paid', player.paid)}
                             className={`
                               flex items-center gap-2 text-sm font-medium select-none
                               ${user === 'admin' ? 'cursor-pointer hover:opacity-80' : ''}
@@ -602,7 +624,7 @@ export default function App() {
                         </td>
                         <td className="p-4 text-center">
                            <button
-                            onClick={() => updatePlayerStatus(player.id, 'confirmed', player.confirmed)}
+                            onClick={() => updatePlayerStatusLocal(player.id, 'confirmed', player.confirmed)}
                             disabled={user !== 'admin'}
                             className={`
                               px-3 py-1 rounded-full text-xs font-bold tracking-wide transition-all
@@ -617,7 +639,7 @@ export default function App() {
                           <td className="p-4 text-right">
                             <button 
                               className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition" 
-                              onClick={() => deletePlayer(player.id)}
+                              onClick={() => deletePlayerLocal(player.id)}
                               title="Remover Jogador"
                             >
                               <Trash2 size={18} />
