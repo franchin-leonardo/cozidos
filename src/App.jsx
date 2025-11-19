@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/static-components */
 import { useState } from 'react';
 import shieldSvg from './assets/shield.svg';
+import { addMultiplePlayersToFirebase } from './firebase';
 
 
 const LogOut = ({ size = 24, className = "", ...props }) => (
@@ -111,7 +112,7 @@ export default function App() {
     reader.readAsText(file);
   };
 
-  const handleBulkImport = () => {
+  const handleBulkImport = async () => {
     if (!importText) return;
     
     const lines = importText.split(/\r\n|\n|\r/);
@@ -144,13 +145,22 @@ export default function App() {
     }
 
     if (validCount > 0) {
-      setPlayers(prev => {
-        const updated = [...prev, ...newPlayersToAdd];
-        return updated.sort((a, b) => a.name.localeCompare(b.name));
-      });
-      alert(`${validCount} jogadores importados com sucesso!`);
-      setImportText('');
-      setCurrentTab('players');
+      try {
+        // Salvar no Firebase
+        const savedPlayers = await addMultiplePlayersToFirebase(newPlayersToAdd);
+        
+        // Atualizar estado local
+        setPlayers(prev => {
+          const updated = [...prev, ...savedPlayers];
+          return updated.sort((a, b) => a.name.localeCompare(b.name));
+        });
+        
+        alert(`${validCount} jogadores adicionados com sucesso!`);
+        setImportText('');
+        setCurrentTab('players');
+      } catch (error) {
+        alert('Erro ao importar jogadores: ' + error.message);
+      }
     } else {
       alert('Nenhuma linha válida encontrada. Verifique o formato: Nome|Posição|Nivel');
     }
@@ -387,7 +397,7 @@ export default function App() {
     return (
       <>
         <GlobalStyle />
-        <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-pink-900 to-pink-700 p-4">
+        <div className="min-h-screen w-full flex items-center justify-center bg-linear-to-br from-pink-900 to-pink-700 p-4">
           <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md text-center transform transition-all hover:scale-105 duration-300">
             <div className="mb-6 flex justify-center">
                <div className="bg-pink-100 p-3 rounded-full">
@@ -434,7 +444,7 @@ export default function App() {
 
       <div className="min-h-screen w-full flex flex-col bg-gray-100 font-sans text-gray-800">
         {/* Header */}
-        <header className="bg-pink-900 text-white shadow-lg flex-shrink-0">
+        <header className="bg-pink-900 text-white shadow-lg shrink-0">
           <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
               <Shield size={32} className="text-yellow-400" />
@@ -454,7 +464,7 @@ export default function App() {
           </div>
         </header>
 
-        <main className="flex-grow max-w-7xl mx-auto p-4 md:p-8 w-full">
+        <main className="grow max-w-7xl mx-auto p-4 md:p-8 w-full">
           
           {/* Tabs Navigation (UPDATED TO PINK) */}
           <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-200 pb-1">
@@ -485,7 +495,7 @@ export default function App() {
               {user === 'admin' && (
                 <div className="p-6 bg-gray-50 border-b border-gray-200">
                   <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-grow">
+                    <div className="grow">
                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nome do Jogador</label>
                       <input 
                         className="w-full px-4 py-2 rounded border border-gray-300 text-gray-900 bg-white focus:ring-2 focus:ring-pink-500 outline-none" 
@@ -644,7 +654,7 @@ export default function App() {
                             {team.length} JOG
                           </span>
                        </div>
-                       <div className="p-4 flex-grow">
+                       <div className="p-4 grow">
                          <ul className="space-y-2">
                            {team.map(p => (
                              <li key={p.id} className="flex justify-between items-center p-2 hover:bg-gray-50 rounded border-b border-gray-100 last:border-0">
@@ -830,9 +840,9 @@ export default function App() {
                   
                   <button 
                     className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2" 
-                    onClick={handleBulkImport}
+                    onClick={async () => await handleBulkImport()}
                   >
-                    Processar Importação
+                    <Upload size={18} /> Adicionar à Base de Dados
                   </button>
                 </div>
               </div>
