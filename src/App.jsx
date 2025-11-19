@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/static-components */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import shieldSvg from './assets/shield.svg';
-import { addMultiplePlayersToFirebase } from './firebase';
+import { addMultiplePlayersToFirebase, loadPlayersFromFirebase } from './firebase';
 
 
 const LogOut = ({ size = 24, className = "", ...props }) => (
@@ -66,6 +66,23 @@ export default function App() {
   const [newPlayerPos, setNewPlayerPos] = useState('Meio');
   const [newPlayerLevel, setNewPlayerLevel] = useState('C');
   const [importText, setImportText] = useState('');
+
+  // --- CARREGAMENTO DE DADOS DO FIREBASE ---
+  useEffect(() => {
+    const loadPlayers = async () => {
+      try {
+        const fbPlayers = await loadPlayersFromFirebase();
+        if (fbPlayers && fbPlayers.length > 0) {
+          setPlayers(fbPlayers.sort((a, b) => a.name.localeCompare(b.name)));
+          console.log('Jogadores carregados do Firebase:', fbPlayers.length);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar jogadores:', error);
+      }
+    };
+    
+    loadPlayers();
+  }, []);
 
   // --- FUNÇÕES DE GERENCIAMENTO DE ESTADO (LOCAL) ---
   
