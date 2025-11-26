@@ -91,6 +91,45 @@ const getConfirmedBadgeClass = (isConfirmed) => {
 // --- CONSTANTES DE TIMES ---
 const TEAM_NAMES = ['Branco', 'Preto', 'Azul', 'Laranja'];
 
+// --- CORES DOS TIMES ---
+const getTeamColors = (teamIndex) => {
+  const colors = {
+    0: { // Branco
+      text: 'text-gray-700',
+      bg: 'bg-gray-100',
+      border: 'border-gray-400',
+      bgHover: 'hover:bg-gray-200',
+      bgCard: 'bg-gray-900',
+      textCard: 'text-gray-50'
+    },
+    1: { // Preto
+      text: 'text-white',
+      bg: 'bg-black',
+      border: 'border-black',
+      bgHover: 'hover:bg-gray-900',
+      bgCard: 'bg-black',
+      textCard: 'text-white'
+    },
+    2: { // Azul
+      text: 'text-blue-700',
+      bg: 'bg-blue-100',
+      border: 'border-blue-400',
+      bgHover: 'hover:bg-blue-200',
+      bgCard: 'bg-blue-600',
+      textCard: 'text-white'
+    },
+    3: { // Laranja
+      text: 'text-orange-700',
+      bg: 'bg-orange-100',
+      border: 'border-orange-400',
+      bgHover: 'hover:bg-orange-200',
+      bgCard: 'bg-orange-600',
+      textCard: 'text-white'
+    }
+  };
+  return colors[teamIndex] || colors[0];
+};
+
 // --- COMPONENTE PRINCIPAL ---
 export default function App() {
   const [user, setUser] = useState(null); 
@@ -928,19 +967,24 @@ export default function App() {
           {/* ABA JOGOS */}
           {currentTab === 'matches' && (
             <div className="space-y-6">
-              <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-pink-900">
+              <div className="bg-linear-to-r from-pink-600 to-pink-700 p-8 rounded-2xl shadow-lg text-white">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      Confrontos: <span className="text-pink-600 text-2xl">{matches.length}</span>
-                    </h3>
-                    <p className="text-gray-500 text-sm mt-1">
-                      12 jogos em 6 rodadas - Todos os times se enfrentam
-                    </p>
+                    <h2 className="text-3xl font-black">⚽ Confrontos</h2>
+                    <div className="flex items-center gap-4 mt-3">
+                      <div className="bg-white bg-opacity-20 backdrop-blur px-4 py-2 rounded-lg">
+                        <p className="text-sm opacity-90">Total de Jogos</p>
+                        <p className="text-3xl font-bold">{matches.length}</p>
+                      </div>
+                      <div className="text-sm opacity-90">
+                        <p className="font-semibold">12 jogos em 6 rodadas</p>
+                        <p>Todos os times se enfrentam</p>
+                      </div>
+                    </div>
                   </div>
-                  {user === 'admin' && (
+                  {user === 'admin' && matches.length === 0 && (
                     <button 
-                      className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-lg shadow-lg transition flex items-center gap-2" 
+                      className="bg-white text-pink-600 hover:bg-pink-50 font-bold px-6 py-3 rounded-xl shadow-lg transition flex items-center gap-2 transform hover:scale-105" 
                       onClick={generateMatches}
                     >
                       <Play size={20} /> Gerar Jogos
@@ -976,18 +1020,30 @@ export default function App() {
                   )}
 
                   <div className="space-y-4">
-                    {matches.map((match) => (
-                            <div key={match.id} className={`rounded-lg p-4 border-2 transition ${match.finished ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white hover:border-pink-300'}`}>
+                    {matches.map((match, idx) => {
+                      const colorA = getTeamColors(match.teamAIndex);
+                      const colorB = getTeamColors(match.teamBIndex);
+                      return (
+                            <div key={match.id} className={`rounded-2xl p-5 border-4 transition transform hover:shadow-2xl ${match.finished ? 'bg-linear-to-r from-green-50 to-green-100 border-green-400' : 'bg-white hover:shadow-lg'}`} style={{borderImage: `linear-gradient(135deg, var(--tw-${colorA.border}), var(--tw-${colorB.border})) 1`}}>
                               
-                              {/* Header com status */}
-                              <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
-                                <h4 className="font-bold text-gray-800 text-sm">Jogo {match.id}</h4>
+                              {/* Header com confronto dos times */}
+                              <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-gray-200">
+                                <div className="flex-1 flex items-center justify-between gap-4">
+                                  <div className="flex items-center gap-2">
+                                    <div className="bg-linear-to-br from-pink-100 to-pink-200 text-pink-700 font-black w-10 h-10 rounded-full flex items-center justify-center shadow-md">{idx + 1}</div>
+                                    <div className={`text-lg font-black uppercase tracking-wider ${match.teamAIndex === 1 ? 'text-black' : colorA.text}`}>{TEAM_NAMES[match.teamAIndex]}</div>
+                                  </div>
+                                  <div className="text-xs text-gray-500 font-bold uppercase">vs</div>
+                                  <div className="flex items-center gap-2 justify-end">
+                                    <div className={`text-lg font-black uppercase tracking-wider ${match.teamBIndex === 1 ? 'text-black' : colorB.text}`}>{TEAM_NAMES[match.teamBIndex]}</div>
+                                  </div>
+                                </div>
                                 {user === 'admin' && (
                                   <button 
                                     onClick={() => toggleMatchFinished(match.id)}
-                                    className={`text-xs font-bold px-3 py-1 rounded transition ${
+                                    className={`text-xs font-bold px-4 py-2 rounded-full transition transform hover:scale-105 ml-4 shrink-0 ${
                                       match.finished 
-                                        ? 'bg-green-200 text-green-800' 
+                                        ? 'bg-green-200 text-green-800 shadow-sm' 
                                         : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                                     }`}
                                   >
@@ -997,14 +1053,14 @@ export default function App() {
                               </div>
 
                               {/* Layout: Time A | Placar | Time B */}
-                              <div className="flex items-center gap-3 md:gap-4">
+                              <div className="flex items-stretch gap-4 md:gap-6">
                                 
                                 {/* TIME A */}
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-xs font-bold text-pink-900 mb-1 truncate">{TEAM_NAMES[match.teamAIndex]}</div>
-                                  <div className="space-y-1">
+                                  <div className={`text-xs font-black mb-2 uppercase tracking-wide ${colorA.text}`}>{TEAM_NAMES[match.teamAIndex]}</div>
+                                  <div className="space-y-2">
                                     {match.teamA.map(p => (
-                                      <div key={p.id} className="text-xs bg-pink-50 px-2 py-1 rounded truncate border border-pink-100">
+                                      <div key={p.id} className={`text-xs px-3 py-2 rounded-lg font-semibold truncate border transition ${colorA.bg} ${colorA.border} ${colorA.bgHover} border ${match.teamAIndex === 1 ? 'text-white' : 'text-gray-900'}`}>
                                         {p.name}
                                       </div>
                                     ))}
@@ -1012,42 +1068,95 @@ export default function App() {
                                 </div>
 
                                 {/* PLACAR E GOLS */}
-                                <div className="flex flex-col items-center gap-2">
+                                <div className="flex flex-col items-center justify-between gap-3">
                                   
-                                  {/* Placar */}
-                                  <div className="bg-linear-to-r from-pink-100 to-pink-50 rounded-lg p-3 border border-pink-200 text-center min-w-20">
-                                    <div className="text-2xl font-bold text-pink-900">
-                                      {match.scoreA} <span className="text-gray-600">X</span> {match.scoreB}
+                                  {/* Placar - GRANDE E VISUAL */}
+                                  <div className="bg-linear-to-b from-pink-600 to-pink-700 rounded-2xl p-4 text-center min-w-28 shadow-lg">
+                                    <div className="text-4xl font-black text-white leading-tight">
+                                      {match.scoreA}
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-1">Atualize adicionando gols</p>
+                                    <div className="text-white text-xs font-bold opacity-80 mt-1">vs</div>
+                                    <div className="text-4xl font-black text-white leading-tight">
+                                      {match.scoreB}
+                                    </div>
+                                    <p className="text-xs text-white opacity-70 mt-2 font-medium">Atualize adicionando gols</p>
                                   </div>
 
-                                  {/* Gols (Admin) */}
+                                  {/* Gols (Admin) - Expandable */}
                                   {user === 'admin' && (
-                                    <div className="w-full max-w-xs space-y-1">
-                                      {/* Gols Time A */}
-                                      {match.goalsA.map((goal, idx) => (
-                                        <div key={`goalA-${idx}`} className="bg-pink-50 border border-pink-200 rounded px-2 py-1 text-xs flex justify-between items-center">
-                                          <span className="truncate">
-                                            <span className="font-bold text-pink-900">⚽</span> {goal.player}
-                                            {goal.assistBy && <span className="text-gray-600 ml-1">({goal.assistBy})</span>}
-                                          </span>
-                                          <button 
-                                            onClick={() => removeGoal(match.id, 'A', idx)}
-                                            className="text-red-500 hover:text-red-700 ml-1 shrink-0"
-                                            title="Remover gol"
-                                          >
-                                            ✕
-                                          </button>
-                                        </div>
-                                      ))}
+                                    <details className="w-full max-w-sm group">
+                                      <summary className="cursor-pointer bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg font-semibold text-sm text-gray-700 transition flex items-center justify-between">
+                                        <span>📋 Gols ({match.goalsA.length + match.goalsB.length})</span>
+                                        <span className="transform group-open:rotate-180 transition">▼</span>
+                                      </summary>
+                                      
+                                      <div className="mt-3 space-y-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                        {/* Gols Time A */}
+                                        {match.goalsA.length > 0 && (
+                                          <div className="space-y-2">
+                                            <p className="text-xs font-bold text-pink-700 uppercase">⚽ {TEAM_NAMES[match.teamAIndex]}</p>
+                                            {match.goalsA.map((goal, idx) => (
+                                              <div key={`goalA-${idx}`} className="bg-pink-100 border border-pink-300 rounded-lg px-3 py-2 text-xs flex justify-between items-center hover:bg-pink-200 transition">
+                                                <span className="truncate font-semibold text-pink-900">
+                                                  {goal.player}
+                                                  {goal.assistBy && <span className="text-pink-600 ml-1 text-xs">({goal.assistBy})</span>}
+                                                </span>
+                                                <button 
+                                                  onClick={() => removeGoal(match.id, 'A', idx)}
+                                                  className="text-red-500 hover:text-red-700 ml-2 shrink-0 font-bold"
+                                                  title="Remover gol"
+                                                >
+                                                  ✕
+                                                </button>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
 
-                                      {/* Form para adicionar gol Time A */}
-                                      {!match.finished && (
-                                        <div className="bg-pink-50 border border-dashed border-pink-300 rounded p-1.5">
+                                        {/* Gols Time B */}
+                                        {match.goalsB.length > 0 && (
+                                          <div className="space-y-2 mt-3 pt-3 border-t border-gray-300">
+                                            <p className="text-xs font-bold text-blue-700 uppercase">⚽ {TEAM_NAMES[match.teamBIndex]}</p>
+                                            {match.goalsB.map((goal, idx) => (
+                                              <div key={`goalB-${idx}`} className="bg-blue-100 border border-blue-300 rounded-lg px-3 py-2 text-xs flex justify-between items-center hover:bg-blue-200 transition">
+                                                <span className="truncate font-semibold text-blue-900">
+                                                  {goal.player}
+                                                  {goal.assistBy && <span className="text-blue-600 ml-1 text-xs">({goal.assistBy})</span>}
+                                                </span>
+                                                <button 
+                                                  onClick={() => removeGoal(match.id, 'B', idx)}
+                                                  className="text-red-500 hover:text-red-700 ml-2 shrink-0 font-bold"
+                                                  title="Remover gol"
+                                                >
+                                                  ✕
+                                                </button>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+
+                                        {match.goalsA.length === 0 && match.goalsB.length === 0 && (
+                                          <p className="text-xs text-gray-500 italic">Nenhum gol marcado ainda</p>
+                                        )}
+                                      </div>
+                                    </details>
+                                  )}
+
+                                  {/* Adicionar Gols - Expandable Form */}
+                                  {user === 'admin' && !match.finished && (
+                                    <details className="w-full max-w-sm group">
+                                      <summary className="cursor-pointer bg-green-100 hover:bg-green-200 px-4 py-2 rounded-lg font-semibold text-sm text-green-700 transition flex items-center justify-between">
+                                        <span>➕ Adicionar Gol</span>
+                                        <span className="transform group-open:rotate-180 transition">▼</span>
+                                      </summary>
+                                      
+                                      <div className="mt-3 space-y-3 bg-green-50 p-4 rounded-lg border border-green-200">
+                                        {/* Form para adicionar gol Time A */}
+                                        <div className="space-y-2 pb-3 border-b border-green-300">
+                                          <p className="text-xs font-bold text-pink-700 uppercase">{TEAM_NAMES[match.teamAIndex]} ⚽</p>
                                           <select 
                                             id={`playerA-${match.id}`}
-                                            className="w-full text-xs px-1 py-0.5 rounded border border-pink-200 bg-white mb-0.5"
+                                            className="w-full text-xs px-3 py-2 rounded-lg border border-pink-200 bg-white focus:border-pink-500 focus:outline-none"
                                             defaultValue=""
                                           >
                                             <option value="">Selecionar jogador...</option>
@@ -1057,7 +1166,7 @@ export default function App() {
                                           </select>
                                           <select 
                                             id={`assistA-${match.id}`}
-                                            className="w-full text-xs px-1 py-0.5 rounded border border-pink-200 bg-white mb-0.5"
+                                            className="w-full text-xs px-3 py-2 rounded-lg border border-pink-200 bg-white focus:border-pink-500 focus:outline-none"
                                             defaultValue=""
                                           >
                                             <option value="">Assistência (opcional)</option>
@@ -1077,39 +1186,18 @@ export default function App() {
                                               document.getElementById(`playerA-${match.id}`).value = '';
                                               document.getElementById(`assistA-${match.id}`).value = '';
                                             }}
-                                            className="w-full text-xs bg-pink-200 hover:bg-pink-300 text-white font-bold px-1 py-0.5 rounded transition"
+                                            className="w-full text-xs bg-pink-500 hover:bg-pink-600 text-white font-bold px-3 py-2 rounded-lg transition"
                                           >
-                                            Adicionar Gol
+                                            ✓ Adicionar Gol
                                           </button>
                                         </div>
-                                      )}
-                                      
-                                      {/* Separador */}
-                                      <div className="border-t border-gray-300 my-1"></div>
-                                      
-                                      {/* Gols Time B */}
-                                      {match.goalsB.map((goal, idx) => (
-                                        <div key={`goalB-${idx}`} className="bg-blue-50 border border-blue-200 rounded px-2 py-1 text-xs flex justify-between items-center">
-                                          <span className="truncate">
-                                            <span className="font-bold text-blue-900">⚽</span> {goal.player}
-                                            {goal.assistBy && <span className="text-gray-600 ml-1">({goal.assistBy})</span>}
-                                          </span>
-                                          <button 
-                                            onClick={() => removeGoal(match.id, 'B', idx)}
-                                            className="text-red-500 hover:text-red-700 ml-1 shrink-0"
-                                            title="Remover gol"
-                                          >
-                                            ✕
-                                          </button>
-                                        </div>
-                                      ))}
 
-                                      {/* Form para adicionar gol Time B */}
-                                      {!match.finished && (
-                                        <div className="bg-blue-50 border border-dashed border-blue-300 rounded p-1.5">
+                                        {/* Form para adicionar gol Time B */}
+                                        <div className="space-y-2 pt-3">
+                                          <p className="text-xs font-bold text-blue-700 uppercase">{TEAM_NAMES[match.teamBIndex]} ⚽</p>
                                           <select 
                                             id={`playerB-${match.id}`}
-                                            className="w-full text-xs px-1 py-0.5 rounded border border-blue-200 bg-white mb-0.5"
+                                            className="w-full text-xs px-3 py-2 rounded-lg border border-blue-200 bg-white focus:border-blue-500 focus:outline-none"
                                             defaultValue=""
                                           >
                                             <option value="">Selecionar jogador...</option>
@@ -1119,7 +1207,7 @@ export default function App() {
                                           </select>
                                           <select 
                                             id={`assistB-${match.id}`}
-                                            className="w-full text-xs px-1 py-0.5 rounded border border-blue-200 bg-white mb-0.5"
+                                            className="w-full text-xs px-3 py-2 rounded-lg border border-blue-200 bg-white focus:border-blue-500 focus:outline-none"
                                             defaultValue=""
                                           >
                                             <option value="">Assistência (opcional)</option>
@@ -1139,22 +1227,22 @@ export default function App() {
                                               document.getElementById(`playerB-${match.id}`).value = '';
                                               document.getElementById(`assistB-${match.id}`).value = '';
                                             }}
-                                            className="w-full text-xs bg-blue-200 hover:bg-blue-300 text-white font-bold px-1 py-0.5 rounded transition"
+                                            className="w-full text-xs bg-blue-500 hover:bg-blue-600 text-white font-bold px-3 py-2 rounded-lg transition"
                                           >
-                                            Adicionar Gol
+                                            ✓ Adicionar Gol
                                           </button>
                                         </div>
-                                      )}
-                                    </div>
+                                      </div>
+                                    </details>
                                   )}
                                 </div>
 
                                 {/* TIME B */}
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-xs font-bold text-blue-900 mb-1 truncate text-right">{TEAM_NAMES[match.teamBIndex]}</div>
-                                  <div className="space-y-1">
+                                  <div className={`text-xs font-black mb-2 uppercase tracking-wide text-right ${colorB.text}`}>{TEAM_NAMES[match.teamBIndex]}</div>
+                                  <div className="space-y-2">
                                     {match.teamB.map(p => (
-                                      <div key={p.id} className="text-xs bg-blue-50 px-2 py-1 rounded truncate border border-blue-100 text-right">
+                                      <div key={p.id} className={`text-xs px-3 py-2 rounded-lg font-semibold truncate border transition ${colorB.bg} ${colorB.border} ${colorB.bgHover} border text-right ${match.teamBIndex === 1 ? 'text-white' : 'text-gray-900'}`}>
                                         {p.name}
                                       </div>
                                     ))}
@@ -1163,7 +1251,8 @@ export default function App() {
 
                               </div>
                             </div>
-                          ))}
+                          );
+                    })}
                     </div>
                   </>
                 )}
