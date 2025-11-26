@@ -33,7 +33,44 @@ const CheckCircle = ({ size = 24, className = "", ...props }) => (
 
 const Shield = ({ size = 24, className = "", ...props }) => (
   <img src={shieldSvg} alt="shield" width={size} height={size} className={className} {...props} />
-);// --- HELPERS DE ESTILO ---
+);
+
+const X = ({ size = 24, className = "", ...props }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+);
+
+const AlertCircle = ({ size = 24, className = "", ...props }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+);
+
+// --- COMPONENTE TOAST ---
+const Toast = ({ type = 'success', message, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const bgColor = {
+    success: 'bg-green-500',
+    error: 'bg-red-500',
+    info: 'bg-blue-500',
+    warning: 'bg-yellow-500'
+  }[type] || 'bg-blue-500';
+
+  const icon = type === 'error' ? <AlertCircle size={20} /> : <CheckCircle size={20} />;
+
+  return (
+    <div className={`${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-pulse`}>
+      {icon}
+      <span className="font-medium">{message}</span>
+      <button onClick={onClose} className="ml-auto hover:opacity-80">
+        <X size={18} />
+      </button>
+    </div>
+  );
+};
+
+// --- HELPERS DE ESTILO ---
 const getLevelBadgeClass = (level) => {
   switch(level) {
     case 'A': return 'bg-green-100 text-green-800 border border-green-200';
@@ -74,6 +111,18 @@ export default function App() {
   const [newPlayerPos, setNewPlayerPos] = useState('Meio');
   const [newPlayerLevel, setNewPlayerLevel] = useState('C');
   const [importText, setImportText] = useState('');
+  
+  const [toasts, setToasts] = useState([]);
+
+  // --- FUNÇÃO DE TOAST ---
+  const showToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
 
   // --- CARREGAMENTO DE DADOS DO FIREBASE ---
   useEffect(() => {
@@ -202,14 +251,14 @@ export default function App() {
           return updated.sort((a, b) => a.name.localeCompare(b.name));
         });
         
-        alert(`${validCount} jogadores adicionados com sucesso!`);
+        showToast(`${validCount} jogadores adicionados com sucesso!`, 'success');
         setImportText('');
         setCurrentTab('players');
       } catch (error) {
-        alert('Erro ao importar jogadores: ' + error.message);
+        showToast('Erro ao importar jogadores: ' + error.message, 'error');
       }
     } else {
-      alert('Nenhuma linha válida encontrada. Verifique o formato: Nome|Posição|Nivel');
+      showToast('Nenhuma linha válida encontrada. Verifique o formato: Nome|Posição|Nivel', 'warning');
     }
   };
 
@@ -217,7 +266,7 @@ export default function App() {
   const generateTeams = () => {
     const confirmedPlayers = players.filter(p => p.confirmed);
     if (confirmedPlayers.length < 4) {
-      alert("Precisa de pelo menos 4 jogadores confirmados para gerar times.");
+      showToast("Precisa de pelo menos 4 jogadores confirmados para gerar times.", 'warning');
       return;
     }
 
@@ -261,7 +310,7 @@ export default function App() {
 
   const generateMatches = () => {
     if (teams.length !== 4) {
-      alert("Antes sorteie os times!");
+      showToast("Antes sorteie os times!", 'warning');
       return;
     }
 
@@ -350,7 +399,7 @@ export default function App() {
 
   const toggleTeamsLock = () => {
     if (teams.length === 0) {
-      alert('Sorteie os times primeiro!');
+      showToast('Sorteie os times primeiro!', 'warning');
       return;
     }
     setTeamsLocked(!teamsLocked);
@@ -397,7 +446,7 @@ export default function App() {
   // --- FINALIZAÇÃO DE TODOS OS JOGOS E PONTUAÇÃO ---
   const finishAllMatches = () => {
     if (!matches.every(m => m.finished)) {
-      alert('Todos os jogos devem estar finalizados!');
+      showToast('Todos os jogos devem estar finalizados!', 'warning');
       return;
     }
 
@@ -499,7 +548,7 @@ export default function App() {
 
     setPlayerStats(newStats);
     setFinishedRounds(matches.length);
-    alert(`Todos os jogos finalizados! Pontuação atualizada.`);
+    showToast(`Todos os jogos finalizados! Pontuação atualizada.`, 'success');
   };
 
   // --- LOGIN ---
@@ -508,7 +557,7 @@ export default function App() {
     if (username === 'admin' && password === 'admin123') {
       setUser('admin');
     } else {
-      alert('Credenciais inválidas');
+      showToast('Credenciais inválidas', 'error');
     }
   };
 
@@ -1021,7 +1070,7 @@ export default function App() {
                                               const player = document.getElementById(`playerA-${match.id}`).value;
                                               const assist = document.getElementById(`assistA-${match.id}`).value;
                                               if (!player) {
-                                                alert('Selecione um jogador para marcar o gol!');
+                                                showToast('Selecione um jogador para marcar o gol!', 'warning');
                                                 return;
                                               }
                                               addGoal(match.id, 'A', player, assist);
@@ -1083,7 +1132,7 @@ export default function App() {
                                               const player = document.getElementById(`playerB-${match.id}`).value;
                                               const assist = document.getElementById(`assistB-${match.id}`).value;
                                               if (!player) {
-                                                alert('Selecione um jogador para marcar o gol!');
+                                                showToast('Selecione um jogador para marcar o gol!', 'warning');
                                                 return;
                                               }
                                               addGoal(match.id, 'B', player, assist);
@@ -1242,6 +1291,18 @@ export default function App() {
           )}
 
         </main>
+
+        {/* TOASTS */}
+        <div className="fixed bottom-4 right-4 space-y-3 z-50 max-w-sm">
+          {toasts.map(toast => (
+            <Toast
+              key={toast.id}
+              type={toast.type}
+              message={toast.message}
+              onClose={() => removeToast(toast.id)}
+            />
+          ))}
+        </div>
       </div>
     </>
   );
