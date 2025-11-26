@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import shieldSvg from './assets/shield.svg';
 import { addMultiplePlayersToFirebase, loadPlayersFromFirebase, updatePlayerStatus, deletePlayerFromFirebase } from './firebase';
+import { saveTeamsToFirebase, saveMatchesToFirebase, loadTeamsHistory, loadMatchesHistory, deleteTeamsHistoryEntry, deleteMatchesHistoryEntry } from './firebase-history';
 
 
 const LogOut = ({ size = 24, className = "", ...props }) => (
@@ -152,6 +153,8 @@ export default function App() {
   const [importText, setImportText] = useState('');
   
   const [toasts, setToasts] = useState([]);
+  const [teamsHistory, setTeamsHistory] = useState([]);
+  const [matchesHistory, setMatchesHistory] = useState([]);
 
   // --- FUNÇÃO DE TOAST ---
   const showToast = (message, type = 'success') => {
@@ -162,6 +165,39 @@ export default function App() {
   const removeToast = (id) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
+
+  // --- FUNÇÕES DE HISTÓRICO ---
+  const handleSaveTeams = async () => {
+    if (teams.length === 0) {
+      showToast('Sorteie os times primeiro!', 'warning');
+      return;
+    }
+    try {
+      await saveTeamsToFirebase(teams, TEAM_NAMES);
+      showToast('Times salvos com sucesso!', 'success');
+      const history = await loadTeamsHistory();
+      setTeamsHistory(history);
+    } catch (error) {
+      showToast('Erro ao salvar times: ' + error.message, 'error');
+    }
+  };
+
+  const handleSaveMatches = async () => {
+    if (matches.length === 0) {
+      showToast('Gere os jogos primeiro!', 'warning');
+      return;
+    }
+    try {
+      await saveMatchesToFirebase(matches);
+      showToast('Jogos salvos com sucesso!', 'success');
+      const history = await loadMatchesHistory();
+      setMatchesHistory(history);
+    } catch (error) {
+      showToast('Erro ao salvar jogos: ' + error.message, 'error');
+    }
+  };
+
+
 
   // --- CARREGAMENTO DE DADOS DO FIREBASE ---
   useEffect(() => {
@@ -178,6 +214,21 @@ export default function App() {
     };
     
     loadPlayers();
+  }, []);
+
+  // --- CARREGAMENTO DE HISTÓRICOS ---
+  useEffect(() => {
+    const loadAllHistories = async () => {
+      try {
+        const th = await loadTeamsHistory();
+        const mh = await loadMatchesHistory();
+        setTeamsHistory(th || []);
+        setMatchesHistory(mh || []);
+      } catch (error) {
+        console.error('Erro ao carregar históricos:', error);
+      }
+    };
+    loadAllHistories();
   }, []);
 
   // --- FUNÇÕES DE GERENCIAMENTO DE ESTADO (LOCAL) ---
@@ -961,6 +1012,58 @@ export default function App() {
                    </button>
                  </div>
                )}
+
+               {/* SEÇÃO DE SALVAMENTO E HISTÓRICO */}
+               {teams.length > 0 && user === 'admin' && (
+                 <div className="bg-purple-50 p-6 rounded-xl shadow-md border-2 border-purple-200 space-y-4">
+                   <div className="flex items-center justify-between">
+                     <h3 className="text-lg font-bold text-purple-900">💾 Salvar Times</h3>
+                     <button 
+                       onClick={handleSaveTeams}
+                       className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-2 rounded-lg transition flex items-center gap-2"
+                     >
+                       📥 Salvar Times
+                     </button>
+                   </div>
+
+                   {teamsHistory.length > 0 && (
+                     <div className="mt-4">
+                       <h4 className="font-semibold text-purple-900 mb-3">📋 Histórico de Salvamentos</h4>
+                       <div className="space-y-2 max-h-96 overflow-y-auto">
+                         {teamsHistory.map((entry, idx) => (
+                           <div key={entry.id} className="bg-white p-3 rounded border border-purple-200 flex justify-between items-start">
+                             <div className="flex-1">
+                               <p className="text-sm font-semibold text-gray-800">
+                                 Salvamento #{teamsHistory.length - idx}
+                               </p>
+                               <p className="text-xs text-gray-500">
+                                 {new Date(entry.timestamp).toLocaleString('pt-BR')}
+                               </p>
+                               <p className="text-xs text-gray-600 mt-1">
+                                 {entry.totalPlayers} jogadores • {entry.teams?.length || 0} times
+                               </p>
+                             </div>
+                             <button 
+                               onClick={async () => {
+                                 try {
+                                   await deleteTeamsHistoryEntry(entry.id);
+                                   showToast('Histórico removido!', 'success');
+                                   setTeamsHistory(await loadTeamsHistory());
+                                 } catch (error) {
+                                   showToast('Erro ao remover: ' + error.message, 'error');
+                                 }
+                               }}
+                               className="text-red-600 hover:text-red-800 text-xs font-bold px-2 py-1 rounded hover:bg-red-50 transition"
+                             >
+                               ✕
+                             </button>
+                           </div>
+                         ))}
+                       </div>
+                     </div>
+                   )}
+                 </div>
+               )}
             </div>
           )}
 
@@ -1047,10 +1150,10 @@ export default function App() {
                                         : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                                     }`}
                                   >
-                                    {match.finished ? '✓ Finalizado' : '⏱ Em Jogo'}
-                                  </button>
-                                )}
-                              </div>
+                                      {match.finished ? '✓ Finalizado' : '⏱ Em Jogo'}
+                                    </button>
+                                  )}
+                                </div>
 
                               {/* Layout: Time A | Placar | Time B */}
                               <div className="flex items-stretch gap-4 md:gap-6">
@@ -1254,6 +1357,58 @@ export default function App() {
                           );
                     })}
                     </div>
+
+                  {/* SEÇÃO DE SALVAMENTO E HISTÓRICO */}
+                  {matches.length > 0 && user === 'admin' && (
+                    <div className="bg-indigo-50 p-6 rounded-xl shadow-md border-2 border-indigo-200 space-y-4 mt-6">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-indigo-900">💾 Salvar Jogos</h3>
+                        <button 
+                          onClick={handleSaveMatches}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2 rounded-lg transition flex items-center gap-2"
+                        >
+                          📥 Salvar Jogos
+                        </button>
+                      </div>
+
+                      {matchesHistory.length > 0 && (
+                        <div className="mt-4">
+                          <h4 className="font-semibold text-indigo-900 mb-3">📋 Histórico de Salvamentos</h4>
+                          <div className="space-y-2 max-h-96 overflow-y-auto">
+                            {matchesHistory.map((entry, idx) => (
+                              <div key={entry.id} className="bg-white p-3 rounded border border-indigo-200 flex justify-between items-start">
+                                <div className="flex-1">
+                                  <p className="text-sm font-semibold text-gray-800">
+                                    Salvamento #{matchesHistory.length - idx}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {new Date(entry.timestamp).toLocaleString('pt-BR')}
+                                  </p>
+                                  <p className="text-xs text-gray-600 mt-1">
+                                    {entry.totalMatches} jogos • {entry.finishedMatches || 0} finalizados
+                                  </p>
+                                </div>
+                                <button 
+                                  onClick={async () => {
+                                    try {
+                                      await deleteMatchesHistoryEntry(entry.id);
+                                      showToast('Histórico removido!', 'success');
+                                      setMatchesHistory(await loadMatchesHistory());
+                                    } catch (error) {
+                                      showToast('Erro ao remover: ' + error.message, 'error');
+                                    }
+                                  }}
+                                  className="text-red-600 hover:text-red-800 text-xs font-bold px-2 py-1 rounded hover:bg-red-50 transition"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   </>
                 )}
             </div>
