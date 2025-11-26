@@ -970,9 +970,9 @@ export default function App() {
               <div className="bg-linear-to-r from-pink-600 to-pink-700 p-8 rounded-2xl shadow-lg text-white">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                   <div>
-                    <h2 className="text-3xl font-black">⚽ Confrontos</h2>
+                    <h2 className="text-3xl font-white">⚽ Confrontos</h2>
                     <div className="flex items-center gap-4 mt-3">
-                      <div className="bg-white bg-opacity-20 backdrop-blur px-4 py-2 rounded-lg">
+                      <div className="bg-black bg-opacity-20 backdrop-blur px-4 py-2 rounded-lg">
                         <p className="text-sm opacity-90">Total de Jogos</p>
                         <p className="text-3xl font-bold">{matches.length}</p>
                       </div>
@@ -1057,7 +1057,7 @@ export default function App() {
                                 
                                 {/* TIME A */}
                                 <div className="flex-1 min-w-0">
-                                  <div className={`text-xs font-black mb-2 uppercase tracking-wide ${colorA.text}`}>{TEAM_NAMES[match.teamAIndex]}</div>
+                                  <div className={`text-xs font-black mb-2 uppercase tracking-wide ${match.teamAIndex === 1 ? 'text-black' : colorA.text}`}>{TEAM_NAMES[match.teamAIndex]}</div>
                                   <div className="space-y-2">
                                     {match.teamA.map(p => (
                                       <div key={p.id} className={`text-xs px-3 py-2 rounded-lg font-semibold truncate border transition ${colorA.bg} ${colorA.border} ${colorA.bgHover} border ${match.teamAIndex === 1 ? 'text-white' : 'text-gray-900'}`}>
@@ -1239,7 +1239,7 @@ export default function App() {
 
                                 {/* TIME B */}
                                 <div className="flex-1 min-w-0">
-                                  <div className={`text-xs font-black mb-2 uppercase tracking-wide text-right ${colorB.text}`}>{TEAM_NAMES[match.teamBIndex]}</div>
+                                  <div className={`text-xs font-black mb-2 uppercase tracking-wide text-right ${match.teamBIndex === 1 ? 'text-black' : colorB.text}`}>{TEAM_NAMES[match.teamBIndex]}</div>
                                   <div className="space-y-2">
                                     {match.teamB.map(p => (
                                       <div key={p.id} className={`text-xs px-3 py-2 rounded-lg font-semibold truncate border transition ${colorB.bg} ${colorB.border} ${colorB.bgHover} border text-right ${match.teamBIndex === 1 ? 'text-white' : 'text-gray-900'}`}>
