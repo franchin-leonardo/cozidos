@@ -27,6 +27,10 @@ const Play = ({ size = 24, className = "", ...props }) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="5 3 19 12 5 21 5 3"/></svg>
 );
 
+const CheckCircle = ({ size = 24, className = "", ...props }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+);
+
 const Shield = ({ size = 24, className = "", ...props }) => (
   <img src={shieldSvg} alt="shield" width={size} height={size} className={className} {...props} />
 );// --- HELPERS DE ESTILO ---
@@ -63,6 +67,8 @@ export default function App() {
   const [matches, setMatches] = useState([]);
   const [teamsLocked, setTeamsLocked] = useState(false);
   const [draggedPlayer, setDraggedPlayer] = useState(null);
+  const [playerStats, setPlayerStats] = useState({}); // { playerId: { points, goals, assists, cleanSheets } }
+  const [finishedRounds, setFinishedRounds] = useState(0);
   
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerPos, setNewPlayerPos] = useState('Meio');
@@ -397,6 +403,114 @@ export default function App() {
     ));
   };
 
+  // --- FINALIZAÇÃO DE TODOS OS JOGOS E PONTUAÇÃO ---
+  const finishAllMatches = () => {
+    if (!matches.every(m => m.finished)) {
+      alert('Todos os jogos devem estar finalizados!');
+      return;
+    }
+
+    const newStats = { ...playerStats };
+
+    matches.forEach(match => {
+      const scoreA = match.scoreA;
+      const scoreB = match.scoreB;
+
+      // Determinar resultado
+      let pointsA = 0, pointsB = 0;
+      if (scoreA > scoreB) {
+        pointsA = 3; // Vitória A
+      } else if (scoreB > scoreA) {
+        pointsB = 3; // Vitória B
+      } else {
+        pointsA = 1; // Empate
+        pointsB = 1;
+      }
+
+      // Gols (1 ponto por gol)
+      pointsA += scoreA;
+      pointsB += scoreB;
+
+      // Clean sheet (+2 pontos)
+      if (scoreA === 0) pointsB += 2;
+      if (scoreB === 0) pointsA += 2;
+
+      // Adicionar pontos aos jogadores
+      match.teamA.forEach(player => {
+        if (!newStats[player.id]) {
+          newStats[player.id] = { 
+            name: player.name, 
+            points: 0, 
+            goals: 0, 
+            assists: 0, 
+            cleanSheets: 0,
+            matches: 0
+          };
+        }
+        newStats[player.id].points += pointsA;
+        newStats[player.id].matches += 1;
+      });
+
+      match.teamB.forEach(player => {
+        if (!newStats[player.id]) {
+          newStats[player.id] = { 
+            name: player.name, 
+            points: 0, 
+            goals: 0, 
+            assists: 0, 
+            cleanSheets: 0,
+            matches: 0
+          };
+        }
+        newStats[player.id].points += pointsB;
+        newStats[player.id].matches += 1;
+      });
+
+      // Contar gols e assistências
+      match.goalsA.forEach(goal => {
+        const scorer = match.teamA.find(p => p.name === goal.player);
+        if (scorer && newStats[scorer.id]) {
+          newStats[scorer.id].goals += 1;
+        }
+        if (goal.assistBy) {
+          const assister = match.teamA.find(p => p.name === goal.assistBy);
+          if (assister && newStats[assister.id]) {
+            newStats[assister.id].assists += 1;
+          }
+        }
+      });
+
+      match.goalsB.forEach(goal => {
+        const scorer = match.teamB.find(p => p.name === goal.player);
+        if (scorer && newStats[scorer.id]) {
+          newStats[scorer.id].goals += 1;
+        }
+        if (goal.assistBy) {
+          const assister = match.teamB.find(p => p.name === goal.assistBy);
+          if (assister && newStats[assister.id]) {
+            newStats[assister.id].assists += 1;
+          }
+        }
+      });
+
+      // Clean sheets
+      if (scoreB === 0) {
+        match.teamA.forEach(player => {
+          if (newStats[player.id]) newStats[player.id].cleanSheets += 1;
+        });
+      }
+      if (scoreA === 0) {
+        match.teamB.forEach(player => {
+          if (newStats[player.id]) newStats[player.id].cleanSheets += 1;
+        });
+      }
+    });
+
+    setPlayerStats(newStats);
+    setFinishedRounds(matches.length);
+    alert(`Todos os jogos finalizados! Pontuação atualizada.`);
+  };
+
   // --- LOGIN ---
   const handleLogin = (e) => {
     e.preventDefault();
@@ -504,6 +618,7 @@ export default function App() {
               { id: 'players', label: `Jogadores (${players.length})`, icon: Users },
               { id: 'draw', label: 'Sorteio', icon: RefreshCw },
               { id: 'matches', label: 'Jogos', icon: Play },
+              { id: 'ranking', label: 'Ranking', icon: Play },
               ...(user === 'admin' ? [{ id: 'import', label: 'Importar', icon: Upload }] : [])
             ].map((tab) => (
               <button 
@@ -795,20 +910,33 @@ export default function App() {
               </div>
 
               {matches.length > 0 && (
-                <div className="space-y-4">
-                  {[1, 2, 3, 4, 5, 6].map((round) => {
-                    const roundMatches = matches.filter(m => m.round === round);
-                    const finishedCount = roundMatches.filter(m => m.finished).length;
-                    return (
-                      <div key={round} className="bg-white rounded-xl shadow-md overflow-hidden">
-                        <div className="bg-pink-900 p-4 flex justify-between items-center">
-                          <h3 className="text-white font-bold text-lg">Rodada {round}</h3>
-                          <span className="text-pink-100 text-sm">
-                            {finishedCount}/{roundMatches.length} finalizados
-                          </span>
-                        </div>
-                        <div className="space-y-3 p-4">
-                          {roundMatches.map((match) => (
+                <>
+                  {user === 'admin' && matches.some(m => m.finished) && !finishedRounds && (
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-300 flex items-center justify-between">
+                      <p className="text-green-800 font-medium flex items-center gap-2">
+                        <span className="text-lg">✅</span> {matches.filter(m => m.finished).length}/{matches.length} jogos finalizados
+                      </p>
+                      {matches.every(m => m.finished) && (
+                        <button
+                          onClick={finishAllMatches}
+                          className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2 rounded-lg transition flex items-center gap-2"
+                        >
+                          <CheckCircle size={18} /> Finalizar Todos os Jogos
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  
+                  {finishedRounds > 0 && (
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-300">
+                      <p className="text-blue-800 font-medium flex items-center gap-2">
+                        <span className="text-lg">✓</span> Todos os jogos finalizados! Confira o ranking.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    {matches.map((match) => (
                             <div key={match.id} className={`rounded-lg p-4 border-2 transition ${match.finished ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white hover:border-pink-300'}`}>
                               
                               {/* Header com status */}
@@ -1011,12 +1139,9 @@ export default function App() {
                               </div>
                             </div>
                           ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                    </div>
+                  </>
+                )}
             </div>
           )}
 
@@ -1067,6 +1192,76 @@ export default function App() {
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ABA RANKING */}
+          {currentTab === 'ranking' && (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-pink-900">
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Ranking Geral dos Jogadores
+                  </h3>
+                  <p className="text-gray-500 text-sm">
+                    {finishedRounds > 0 
+                      ? `Pontuação após ${finishedRounds} rodada(s)` 
+                      : 'Nenhuma rodada finalizada ainda'}
+                  </p>
+                </div>
+              </div>
+
+              {Object.keys(playerStats).length > 0 ? (
+                <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-linear-to-r from-pink-600 to-pink-700 text-white text-xs uppercase border-b border-pink-200">
+                          <th className="p-4 font-semibold">Posição</th>
+                          <th className="p-4 font-semibold">Jogador</th>
+                          <th className="p-4 font-semibold text-center">Pontos</th>
+                          <th className="p-4 font-semibold text-center">⚽ Gols</th>
+                          <th className="p-4 font-semibold text-center">🎯 Assistências</th>
+                          <th className="p-4 font-semibold text-center">🛡️ Sem Sofrer</th>
+                          <th className="p-4 font-semibold text-center">Jogos</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {Object.entries(playerStats)
+                          .sort((a, b) => b[1].points - a[1].points)
+                          .map((entry, idx) => {
+                            const playerId = entry[0];
+                            const stats = entry[1];
+                            return (
+                              <tr key={playerId} className={`transition ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-pink-50`}>
+                                <td className="p-4 font-bold text-lg text-pink-600 w-12">
+                                  {idx === 0 && '🥇'}
+                                  {idx === 1 && '🥈'}
+                                  {idx === 2 && '🥉'}
+                                  {idx > 2 && `#${idx + 1}`}
+                                </td>
+                                <td className="p-4 font-medium text-gray-900">{stats.name}</td>
+                                <td className="p-4 text-center">
+                                  <span className="inline-block bg-pink-100 text-pink-900 font-bold px-3 py-1 rounded-full">
+                                    {stats.points}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-center font-bold text-gray-700">{stats.goals}</td>
+                                <td className="p-4 text-center font-bold text-gray-700">{stats.assists}</td>
+                                <td className="p-4 text-center font-bold text-gray-700">{stats.cleanSheets}</td>
+                                <td className="p-4 text-center font-bold text-gray-700">{stats.matches}</td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-xl p-12 text-center">
+                  <p className="text-gray-500">Nenhuma pontuação registrada ainda. Finalize rodadas para ver o ranking!</p>
+                </div>
+              )}
             </div>
           )}
 
