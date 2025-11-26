@@ -356,15 +356,6 @@ export default function App() {
     setTeamsLocked(!teamsLocked);
   };
 
-  const updateMatchScore = (matchId, teamSide, value) => {
-    if (user !== 'admin') return;
-    setMatches(prev => prev.map(match => 
-      match.id === matchId 
-        ? { ...match, [teamSide === 'A' ? 'scoreA' : 'scoreB']: Math.max(0, value) }
-        : match
-    ));
-  };
-
   const toggleMatchFinished = (matchId) => {
     if (user !== 'admin') return;
     setMatches(prev => prev.map(match => 
@@ -976,29 +967,10 @@ export default function App() {
                                   
                                   {/* Placar */}
                                   <div className="bg-linear-to-r from-pink-100 to-pink-50 rounded-lg p-3 border border-pink-200 text-center min-w-20">
-                                    {user === 'admin' ? (
-                                      <div className="flex gap-2 items-center justify-center">
-                                        <input 
-                                          type="number" 
-                                          min="0" 
-                                          value={match.scoreA} 
-                                          onChange={(e) => updateMatchScore(match.id, 'A', parseInt(e.target.value) || 0)}
-                                          className="w-10 px-1 py-1 border border-pink-300 rounded text-center font-bold text-lg bg-white"
-                                        />
-                                        <span className="font-bold text-gray-600">X</span>
-                                        <input 
-                                          type="number" 
-                                          min="0" 
-                                          value={match.scoreB} 
-                                          onChange={(e) => updateMatchScore(match.id, 'B', parseInt(e.target.value) || 0)}
-                                          className="w-10 px-1 py-1 border border-pink-300 rounded text-center font-bold text-lg bg-white"
-                                        />
-                                      </div>
-                                    ) : (
-                                      <div className="text-2xl font-bold text-pink-900">
-                                        {match.scoreA} <span className="text-gray-600">X</span> {match.scoreB}
-                                      </div>
-                                    )}
+                                    <div className="text-2xl font-bold text-pink-900">
+                                      {match.scoreA} <span className="text-gray-600">X</span> {match.scoreB}
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">Atualize adicionando gols</p>
                                   </div>
 
                                   {/* Gols (Admin) */}
@@ -1048,11 +1020,13 @@ export default function App() {
                                             onClick={() => {
                                               const player = document.getElementById(`playerA-${match.id}`).value;
                                               const assist = document.getElementById(`assistA-${match.id}`).value;
-                                              if (player) {
-                                                addGoal(match.id, 'A', player, assist);
-                                                document.getElementById(`playerA-${match.id}`).value = '';
-                                                document.getElementById(`assistA-${match.id}`).value = '';
+                                              if (!player) {
+                                                alert('Selecione um jogador para marcar o gol!');
+                                                return;
                                               }
+                                              addGoal(match.id, 'A', player, assist);
+                                              document.getElementById(`playerA-${match.id}`).value = '';
+                                              document.getElementById(`assistA-${match.id}`).value = '';
                                             }}
                                             className="w-full text-xs bg-pink-200 hover:bg-pink-300 text-white font-bold px-1 py-0.5 rounded transition"
                                           >
@@ -1108,11 +1082,13 @@ export default function App() {
                                             onClick={() => {
                                               const player = document.getElementById(`playerB-${match.id}`).value;
                                               const assist = document.getElementById(`assistB-${match.id}`).value;
-                                              if (player) {
-                                                addGoal(match.id, 'B', player, assist);
-                                                document.getElementById(`playerB-${match.id}`).value = '';
-                                                document.getElementById(`assistB-${match.id}`).value = '';
+                                              if (!player) {
+                                                alert('Selecione um jogador para marcar o gol!');
+                                                return;
                                               }
+                                              addGoal(match.id, 'B', player, assist);
+                                              document.getElementById(`playerB-${match.id}`).value = '';
+                                              document.getElementById(`assistB-${match.id}`).value = '';
                                             }}
                                             className="w-full text-xs bg-blue-200 hover:bg-blue-300 text-white font-bold px-1 py-0.5 rounded transition"
                                           >
